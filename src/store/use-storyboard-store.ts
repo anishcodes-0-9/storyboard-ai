@@ -14,6 +14,8 @@ type StoryboardState = {
   activeTemplate: "launch-brief" | "product-strategy" | "exec-summary";
   lastSavedLabel: string;
   sections: StoryboardSection[];
+  artifactTitle: string;
+  artifactSubtitle: string;
   hydrated: boolean;
   isGenerating: boolean;
   setPrompt: (value: string) => void;
@@ -28,10 +30,20 @@ type StoryboardState = {
 
 type PersistedStoryboardState = Pick<
   StoryboardState,
-  "prompt" | "activeTemplate" | "sections"
+  | "prompt"
+  | "activeTemplate"
+  | "sections"
+  | "artifactTitle"
+  | "artifactSubtitle"
 >;
 
 const STORAGE_KEY = "storyboard-ai.workspace";
+
+const templateLabels: Record<StoryboardState["activeTemplate"], string> = {
+  "launch-brief": "Launch Brief",
+  "product-strategy": "Product Strategy",
+  "exec-summary": "Executive Summary",
+};
 
 const initialSections: StoryboardSection[] = [
   {
@@ -106,12 +118,21 @@ const regeneratedCopy: Record<string, string[]> = {
 };
 
 function getPersistableState(
-  state: Pick<StoryboardState, "prompt" | "activeTemplate" | "sections">,
+  state: Pick<
+    StoryboardState,
+    | "prompt"
+    | "activeTemplate"
+    | "sections"
+    | "artifactTitle"
+    | "artifactSubtitle"
+  >,
 ): PersistedStoryboardState {
   return {
     prompt: state.prompt,
     activeTemplate: state.activeTemplate,
     sections: state.sections,
+    artifactTitle: state.artifactTitle,
+    artifactSubtitle: state.artifactSubtitle,
   };
 }
 
@@ -120,14 +141,6 @@ function moveItem<T>(items: T[], fromIndex: number, toIndex: number) {
   const [moved] = next.splice(fromIndex, 1);
   next.splice(toIndex, 0, moved);
   return next;
-}
-
-function toTitleCase(value: string) {
-  return value
-    .split(/[\s-]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
 }
 
 function extractPromptKeywords(prompt: string) {
@@ -139,67 +152,83 @@ function extractPromptKeywords(prompt: string) {
     .slice(0, 6);
 }
 
+function deriveArtifactTitle(prompt: string) {
+  const cleaned = prompt.trim().replace(/\s+/g, " ");
+  if (!cleaned) return "Untitled Storyboard";
+  const trimmed =
+    cleaned.length > 48 ? `${cleaned.slice(0, 48).trim()}...` : cleaned;
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+}
+
 function buildGeneratedSections(
   prompt: string,
   template: StoryboardState["activeTemplate"],
-): StoryboardSection[] {
+): {
+  sections: StoryboardSection[];
+  artifactTitle: string;
+  artifactSubtitle: string;
+} {
   const normalizedPrompt = prompt.trim();
   const keywords = extractPromptKeywords(normalizedPrompt);
   const subject =
     normalizedPrompt.length > 0
       ? normalizedPrompt.slice(0, 72)
       : "an AI-assisted product story";
-  const templateLabel = toTitleCase(template);
+  const templateLabel = templateLabels[template];
 
-  return [
-    {
-      id: "summary",
-      title: "Narrative Summary",
-      kind: "summary",
-      status: "ai",
-      tone: "Confident",
-      content: [
-        `This storyboard frames ${subject} as a polished ${templateLabel.toLowerCase()} with a clearer story arc, stronger structure, and sharper review readiness.`,
-        `The generated draft emphasizes speed, visual clarity, and editable sections so the artifact feels useful immediately instead of reading like raw AI output.`,
-      ],
-    },
-    {
-      id: "pillars",
-      title: "Strategic Pillars",
-      kind: "bullets",
-      status: "ai",
-      tone: "Sharp",
-      content: [
-        `Lead with ${keywords[0] ?? "a compelling product narrative"} to anchor the story`,
-        `Show why ${keywords[1] ?? "the core workflow"} matters now`,
-        `Translate ${keywords[2] ?? "the value proposition"} into a presentation-ready structure`,
-      ],
-    },
-    {
-      id: "roadmap",
-      title: "Milestone Roadmap",
-      kind: "timeline",
-      status: "ai",
-      tone: "Operational",
-      content: [
-        `Phase 1: shape the ${keywords[3] ?? "opening narrative"} and establish the visual hierarchy`,
-        `Phase 2: refine sections, iterate on ${keywords[4] ?? "key messages"}, and validate clarity`,
-        `Phase 3: prepare export-ready output and finalize the ${keywords[5] ?? "review flow"}`,
-      ],
-    },
-    {
-      id: "success",
-      title: "Success Signals",
-      kind: "metrics",
-      status: "ai",
-      tone: "Measured",
-      content: [
-        "The first draft feels credible within one generation pass",
-        "Users can refine individual sections without losing the broader story",
-        "The final artifact looks polished enough to review or present right away",
-      ],
-    },
-  ];
+  return {
+    artifactTitle: deriveArtifactTitle(normalizedPrompt),
+    artifactSubtitle: `${templateLabel} generated from your latest prompt`,
+    sections: [
+      {
+        id: "summary",
+        title: "Narrative Summary",
+        kind: "summary",
+        status: "ai",
+        tone: "Confident",
+        content: [
+          `This storyboard frames ${subject} as a polished ${templateLabel.toLowerCase()} with a clearer story arc, stronger structure, and sharper review readiness.`,
+          `The generated draft emphasizes speed, visual clarity, and editable sections so the artifact feels useful immediately instead of reading like raw AI output.`,
+        ],
+      },
+      {
+        id: "pillars",
+        title: "Strategic Pillars",
+        kind: "bullets",
+        status: "ai",
+        tone: "Sharp",
+        content: [
+          `Lead with ${keywords[0] ?? "a compelling product narrative"} to anchor the story`,
+          `Show why ${keywords[1] ?? "the core workflow"} matters now`,
+          `Translate ${keywords[2] ?? "the value proposition"} into a presentation-ready structure`,
+        ],
+      },
+      {
+        id: "roadmap",
+        title: "Milestone Roadmap",
+        kind: "timeline",
+        status: "ai",
+        tone: "Operational",
+        content: [
+          `Phase 1: shape the ${keywords[3] ?? "opening narrative"} and establish the visual hierarchy`,
+          `Phase 2: refine sections, iterate on ${keywords[4] ?? "key messages"}, and validate clarity`,
+          `Phase 3: prepare export-ready output and finalize the ${keywords[5] ?? "review flow"}`,
+        ],
+      },
+      {
+        id: "success",
+        title: "Success Signals",
+        kind: "metrics",
+        status: "ai",
+        tone: "Measured",
+        content: [
+          "The first draft feels credible within one generation pass",
+          "Users can refine individual sections without losing the broader story",
+          "The final artifact looks polished enough to review or present right away",
+        ],
+      },
+    ],
+  };
 }
 
 export const useStoryboardStore = create<StoryboardState>((set, get) => ({
@@ -208,6 +237,8 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
   activeTemplate: "launch-brief",
   lastSavedLabel: "Saved just now",
   sections: initialSections,
+  artifactTitle: "New Product Launch",
+  artifactSubtitle: "Launch Brief generated from your latest prompt",
   hydrated: false,
   isGenerating: false,
   setPrompt: (value) =>
@@ -218,6 +249,7 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
   setTemplate: (value) =>
     set({
       activeTemplate: value,
+      artifactSubtitle: `${templateLabels[value]} selected for the next generation`,
       lastSavedLabel: "Template switched locally",
     }),
   generateStoryboard: async () => {
@@ -232,9 +264,13 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
       window.setTimeout(resolve, 900);
     });
 
+    const generated = buildGeneratedSections(prompt, activeTemplate);
+
     set({
       isGenerating: false,
-      sections: buildGeneratedSections(prompt, activeTemplate),
+      sections: generated.sections,
+      artifactTitle: generated.artifactTitle,
+      artifactSubtitle: generated.artifactSubtitle,
       lastSavedLabel: "Storyboard generated locally",
     });
   },
@@ -304,6 +340,10 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
         prompt: parsed.prompt,
         activeTemplate: parsed.activeTemplate,
         sections: parsed.sections,
+        artifactTitle: parsed.artifactTitle ?? "New Product Launch",
+        artifactSubtitle:
+          parsed.artifactSubtitle ??
+          "Launch Brief generated from your latest prompt",
         hydrated: true,
         lastSavedLabel: "Restored from local storage",
       });
@@ -328,6 +368,8 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
           prompt: state.prompt,
           activeTemplate: state.activeTemplate,
           sections: state.sections,
+          artifactTitle: state.artifactTitle,
+          artifactSubtitle: state.artifactSubtitle,
         }),
       ),
     );

@@ -1,4 +1,4 @@
-import { Download, Grip, Share2 } from "lucide-react";
+import { Download, Grip, Share2, Sparkles } from "lucide-react";
 import {
   closestCenter,
   DndContext,
@@ -13,7 +13,13 @@ import { useStoryboardStore } from "../../store/use-storyboard-store";
 import { StoryboardSectionCard } from "./storyboard-section-card";
 
 export function StoryboardCanvas() {
-  const { sections, activeTemplate, reorderSections } = useStoryboardStore();
+  const {
+    sections,
+    activeTemplate,
+    artifactTitle,
+    artifactSubtitle,
+    reorderSections,
+  } = useStoryboardStore();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -41,9 +47,13 @@ export function StoryboardCanvas() {
             Live Artifact
           </p>
           <h1 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[var(--text)]">
-            Storyboard workspace
+            {artifactTitle}
           </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
+          <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-[rgba(224,176,122,0.18)] bg-[rgba(224,176,122,0.08)] px-3 py-2 text-xs uppercase tracking-[0.18em] text-[var(--accent)]">
+            <Sparkles size={14} />
+            {artifactSubtitle}
+          </div>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
             This is the core product surface: prompt in, structured narrative
             out, with editable sections that can later support regenerate,
             reorder, export, and share actions.
@@ -55,7 +65,13 @@ export function StoryboardCanvas() {
             aria-label="Active template"
             className="rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-2 text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]"
           >
-            {activeTemplate.replace("-", " ")}
+            {
+              {
+                "launch-brief": "Launch Brief",
+                "product-strategy": "Product Strategy",
+                "exec-summary": "Executive Summary",
+              }[activeTemplate]
+            }
           </div>
           <button className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-2 text-sm text-[var(--text)] transition hover:border-[var(--accent)]">
             <Share2 size={15} />
