@@ -97,4 +97,48 @@ test.describe("Storyboard editor", () => {
       /product strategy/i,
     );
   });
+
+  test("generates storyboard content from the prompt", async ({ page }) => {
+    await page.goto("/editor");
+
+    const prompt = page.locator("textarea").first();
+    await prompt.fill(
+      "Create a cinematic storyboard for a football coaching assistant app for college teams.",
+    );
+
+    await page.getByRole("button", { name: /Generate storyboard/i }).click();
+
+    await expect(
+      page.getByRole("button", { name: /Generating/i }),
+    ).toBeDisabled();
+
+    await expect(
+      page.getByText(/football coaching assistant app for college teams/i),
+    ).toBeVisible();
+
+    await page.waitForTimeout(800);
+    await page.reload();
+
+    await expect(
+      page.getByText(/football coaching assistant app for college teams/i),
+    ).toBeVisible();
+  });
+
+  test("generation reflects template context", async ({ page }) => {
+    await page.goto("/editor");
+
+    const prompt = page.locator("textarea").first();
+    await prompt.fill(
+      "Build a concise storyboard for an AI product launch narrative.",
+    );
+
+    await page.getByRole("button", { name: /Executive summary/i }).click();
+    await expect(page.getByLabel("Active template")).toHaveText(
+      /exec summary/i,
+    );
+
+    await page.getByRole("button", { name: /Generate storyboard/i }).click();
+
+    await expect(page.getByText(/polished exec summary/i)).toBeVisible();
+  });
 });
