@@ -29,24 +29,19 @@ test.describe("Storyboard editor", () => {
   test("edits and saves a section", async ({ page }) => {
     await page.goto("/editor");
 
-    const firstEditButton = page
-      .getByRole("button")
-      .filter({ hasText: "" })
-      .nth(4);
-    await firstEditButton.click();
+    await page.getByRole("button", { name: "Edit Narrative Summary" }).click();
 
-    const editor = page.locator("textarea").nth(1);
+    const editor = page.getByRole("textbox", {
+      name: "Editor for Narrative Summary",
+    });
     await editor.fill("Playwright edited line 1\nPlaywright edited line 2");
 
-    await page
-      .getByRole("button")
-      .filter({ has: page.locator("svg") })
-      .nth(4)
-      .click();
+    await page.getByRole("button", { name: "Save Narrative Summary" }).click();
 
     await expect(page.getByText("Playwright edited line 1")).toBeVisible();
     await expect(page.getByText("Playwright edited line 2")).toBeVisible();
 
+    await page.waitForTimeout(800);
     await page.reload();
 
     await expect(page.getByText("Playwright edited line 1")).toBeVisible();
@@ -58,19 +53,15 @@ test.describe("Storyboard editor", () => {
   }) => {
     await page.goto("/editor");
 
-    const firstEditButton = page
-      .getByRole("button")
-      .filter({ hasText: "" })
-      .nth(4);
-    await firstEditButton.click();
+    await page.getByRole("button", { name: "Edit Narrative Summary" }).click();
 
-    const editor = page.locator("textarea").nth(1);
+    const editor = page.getByRole("textbox", {
+      name: "Editor for Narrative Summary",
+    });
     await editor.fill("This should be canceled");
 
     await page
-      .getByRole("button")
-      .filter({ has: page.locator("svg") })
-      .nth(5)
+      .getByRole("button", { name: "Cancel Narrative Summary" })
       .click();
 
     await expect(page.getByText("This should be canceled")).not.toBeVisible();
@@ -79,7 +70,9 @@ test.describe("Storyboard editor", () => {
   test("regenerates a section", async ({ page }) => {
     await page.goto("/editor");
 
-    await page.getByRole("button").filter({ hasText: "" }).nth(5).click();
+    await page
+      .getByRole("button", { name: "Regenerate Narrative Summary" })
+      .click();
 
     await expect(
       page.getByText(
@@ -93,11 +86,15 @@ test.describe("Storyboard editor", () => {
 
     await page.getByRole("button", { name: /Product strategy/i }).click();
 
-    await expect(page.getByText("product strategy")).toBeVisible();
+    await expect(page.getByLabel("Active template")).toHaveText(
+      /product strategy/i,
+    );
 
     await page.waitForTimeout(800);
     await page.reload();
 
-    await expect(page.getByText("product strategy")).toBeVisible();
+    await expect(page.getByLabel("Active template")).toHaveText(
+      /product strategy/i,
+    );
   });
 });

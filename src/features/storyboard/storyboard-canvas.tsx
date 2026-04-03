@@ -51,7 +51,10 @@ export function StoryboardCanvas() {
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <div className="rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-2 text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]">
+          <div
+            aria-label="Active template"
+            className="rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-2 text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]"
+          >
             {activeTemplate.replace("-", " ")}
           </div>
           <button className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-2 text-sm text-[var(--text)] transition hover:border-[var(--accent)]">

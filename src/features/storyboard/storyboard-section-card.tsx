@@ -76,6 +76,7 @@ export function StoryboardSectionCard({ section }: StoryboardSectionCardProps) {
           <div className="flex items-center gap-3">
             <button
               type="button"
+              aria-label={`Drag ${section.title}`}
               {...attributes}
               {...listeners}
               className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--panel)] text-[var(--text-faint)] transition hover:border-[var(--accent)] hover:text-[var(--text)]"
@@ -118,12 +119,16 @@ export function StoryboardSectionCard({ section }: StoryboardSectionCardProps) {
           {!isEditing ? (
             <>
               <button
+                type="button"
+                aria-label={`Edit ${section.title}`}
                 onClick={handleStartEditing}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--panel)] text-[var(--text-muted)] transition hover:border-[var(--accent)] hover:text-[var(--text)]"
               >
                 <PenLine size={15} />
               </button>
               <button
+                type="button"
+                aria-label={`Regenerate ${section.title}`}
                 onClick={handleRegenerate}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--panel)] text-[var(--text-muted)] transition hover:border-[var(--accent)] hover:text-[var(--text)]"
               >
@@ -133,12 +138,16 @@ export function StoryboardSectionCard({ section }: StoryboardSectionCardProps) {
           ) : (
             <>
               <button
+                type="button"
+                aria-label={`Save ${section.title}`}
                 onClick={handleSave}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[rgba(141,208,165,0.24)] bg-[rgba(141,208,165,0.1)] text-[var(--success)] transition hover:scale-[1.02]"
               >
                 <Check size={15} />
               </button>
               <button
+                type="button"
+                aria-label={`Cancel ${section.title}`}
                 onClick={handleCancel}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[rgba(240,139,125,0.24)] bg-[rgba(240,139,125,0.1)] text-[var(--danger)] transition hover:scale-[1.02]"
               >
@@ -163,6 +172,7 @@ export function StoryboardSectionCard({ section }: StoryboardSectionCardProps) {
       ) : (
         <div className="mt-4">
           <textarea
+            aria-label={`Editor for ${section.title}`}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             rows={Math.max(section.content.length * 2, 8)}
