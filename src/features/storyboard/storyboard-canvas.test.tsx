@@ -38,6 +38,7 @@ describe("StoryboardCanvas actions", () => {
       ],
       artifactTitle: "Launch Artifact",
       artifactSubtitle: "Launch Brief generated from your latest prompt",
+      snapshots: [],
       hydrated: true,
       isGenerating: false,
     });

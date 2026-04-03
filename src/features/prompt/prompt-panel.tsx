@@ -31,6 +31,7 @@ export function PromptPanel() {
     lastSavedLabel,
     isGenerating,
     generateStoryboard,
+    saveSnapshot,
   } = useStoryboardStore();
 
   return (
@@ -82,7 +83,11 @@ export function PromptPanel() {
               )}
             </button>
 
-            <button className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm text-[var(--text)] transition hover:border-[var(--accent)]">
+            <button
+              type="button"
+              onClick={saveSnapshot}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm text-[var(--text)] transition hover:border-[var(--accent)]"
+            >
               <FileText size={16} />
               Save snapshot
             </button>

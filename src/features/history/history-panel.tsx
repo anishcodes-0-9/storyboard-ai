@@ -1,17 +1,29 @@
-import { Clock3, CopyPlus, History, ShieldCheck } from "lucide-react";
+import {
+  Clock3,
+  CopyPlus,
+  History,
+  RotateCcw,
+  ShieldCheck,
+} from "lucide-react";
 
 import { Sidebar } from "../../components/layout/sidebar";
 import { useStoryboardStore } from "../../store/use-storyboard-store";
 
-const events = [
-  "Initial artifact generated from launch brief prompt",
-  "Narrative summary refined with a sharper product angle",
-  "Roadmap section marked for regenerate after API wiring",
-];
+function formatSnapshotTime(value: string) {
+  const date = new Date(value);
+  return date.toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 export function HistoryPanel() {
   const hydrated = useStoryboardStore((state) => state.hydrated);
   const lastSavedLabel = useStoryboardStore((state) => state.lastSavedLabel);
+  const snapshots = useStoryboardStore((state) => state.snapshots);
+  const restoreSnapshot = useStoryboardStore((state) => state.restoreSnapshot);
 
   return (
     <Sidebar eyebrow="Timeline" title="Session History" className="h-full">
@@ -43,20 +55,37 @@ export function HistoryPanel() {
           </p>
 
           <div className="mt-4 space-y-3">
-            {events.map((event, index) => (
-              <div
-                key={event}
-                className="rounded-[20px] border border-[var(--panel-border)] px-4 py-3"
-              >
-                <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-[var(--text-faint)]">
-                  <Clock3 size={13} />
-                  Event {index + 1}
-                </div>
-                <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
-                  {event}
-                </p>
+            {snapshots.length === 0 ? (
+              <div className="rounded-[20px] border border-[var(--panel-border)] px-4 py-4 text-sm leading-6 text-[var(--text-muted)]">
+                Save your first snapshot to create a lightweight restore point.
               </div>
-            ))}
+            ) : (
+              snapshots.map((snapshot, index) => (
+                <div
+                  key={snapshot.id}
+                  className="rounded-[20px] border border-[var(--panel-border)] px-4 py-3"
+                >
+                  <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-[var(--text-faint)]">
+                    <Clock3 size={13} />
+                    Snapshot {snapshots.length - index}
+                  </div>
+                  <p className="mt-2 text-sm font-medium text-[var(--text)]">
+                    {snapshot.label}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
+                    {formatSnapshotTime(snapshot.createdAt)}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => restoreSnapshot(snapshot.id)}
+                    className="mt-3 inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-3 py-2 text-xs uppercase tracking-[0.16em] text-[var(--text)] transition hover:border-[var(--accent)]"
+                  >
+                    <RotateCcw size={13} />
+                    Restore
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         </div>
 

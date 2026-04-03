@@ -179,4 +179,33 @@ test.describe("Storyboard editor", () => {
       page.getByText(/Launch Brief generated from your latest prompt/i),
     ).toBeVisible();
   });
+  test("saves and restores snapshots across refresh", async ({ page }) => {
+    await page.goto("/editor");
+
+    const prompt = page.locator("textarea").first();
+
+    await prompt.fill("First snapshot prompt");
+    await page.getByRole("button", { name: /Generate storyboard/i }).click();
+    await page.getByRole("button", { name: /Save snapshot/i }).click();
+
+    await expect(page.getByText("Snapshot 1", { exact: true })).toBeVisible();
+
+    await prompt.fill("Second snapshot prompt");
+    await page.getByRole("button", { name: /Generate storyboard/i }).click();
+    await page.getByRole("button", { name: /Save snapshot/i }).click();
+
+    await expect(page.getByText("Snapshot 2", { exact: true })).toBeVisible();
+
+    const restoreButtons = page.getByRole("button", { name: /Restore/i });
+    await restoreButtons.nth(1).click();
+
+    await expect(prompt).toHaveValue("First snapshot prompt");
+
+    await page.waitForTimeout(800);
+    await page.reload();
+
+    await expect(prompt).toHaveValue("First snapshot prompt");
+    await expect(page.getByText("Snapshot 1", { exact: true })).toBeVisible();
+    await expect(page.getByText("Snapshot 2", { exact: true })).toBeVisible();
+  });
 });

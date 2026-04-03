@@ -11,6 +11,11 @@ export function AppProviders({ children }: PropsWithChildren) {
   const prompt = useStoryboardStore((state) => state.prompt);
   const activeTemplate = useStoryboardStore((state) => state.activeTemplate);
   const sections = useStoryboardStore((state) => state.sections);
+  const artifactTitle = useStoryboardStore((state) => state.artifactTitle);
+  const artifactSubtitle = useStoryboardStore(
+    (state) => state.artifactSubtitle,
+  );
+  const snapshots = useStoryboardStore((state) => state.snapshots);
 
   useEffect(() => {
     hydrateFromStorage();
@@ -26,7 +31,16 @@ export function AppProviders({ children }: PropsWithChildren) {
     }, 500);
 
     return () => window.clearTimeout(timeout);
-  }, [hydrated, prompt, activeTemplate, sections, saveToStorage]);
+  }, [
+    hydrated,
+    prompt,
+    activeTemplate,
+    sections,
+    artifactTitle,
+    artifactSubtitle,
+    snapshots,
+    saveToStorage,
+  ]);
 
   return children;
 }
