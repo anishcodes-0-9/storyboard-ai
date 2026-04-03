@@ -14,11 +14,21 @@ type StoryboardState = {
   activeTemplate: "launch-brief" | "product-strategy" | "exec-summary";
   lastSavedLabel: string;
   sections: StoryboardSection[];
+  hydrated: boolean;
   setPrompt: (value: string) => void;
   setTemplate: (value: StoryboardState["activeTemplate"]) => void;
   updateSection: (id: string, content: string[]) => void;
   regenerateSection: (id: string) => void;
+  hydrateFromStorage: () => void;
+  saveToStorage: () => void;
 };
+
+type PersistedStoryboardState = Pick<
+  StoryboardState,
+  "prompt" | "activeTemplate" | "sections"
+>;
+
+const STORAGE_KEY = "storyboard-ai.workspace";
 
 const initialSections: StoryboardSection[] = [
   {
@@ -92,21 +102,32 @@ const regeneratedCopy: Record<string, string[]> = {
   ],
 };
 
-export const useStoryboardStore = create<StoryboardState>((set) => ({
+function getPersistableState(
+  state: Pick<StoryboardState, "prompt" | "activeTemplate" | "sections">,
+): PersistedStoryboardState {
+  return {
+    prompt: state.prompt,
+    activeTemplate: state.activeTemplate,
+    sections: state.sections,
+  };
+}
+
+export const useStoryboardStore = create<StoryboardState>((set, get) => ({
   prompt:
     "Create a launch-ready storyboard for an AI tool that converts rough product ideas into polished presentation narratives for team reviews.",
   activeTemplate: "launch-brief",
   lastSavedLabel: "Saved just now",
   sections: initialSections,
+  hydrated: false,
   setPrompt: (value) =>
     set({
       prompt: value,
-      lastSavedLabel: "Draft updated just now",
+      lastSavedLabel: "Draft updated locally",
     }),
   setTemplate: (value) =>
     set({
       activeTemplate: value,
-      lastSavedLabel: "Template switched just now",
+      lastSavedLabel: "Template switched locally",
     }),
   updateSection: (id, content) =>
     set((state) => ({
@@ -132,6 +153,60 @@ export const useStoryboardStore = create<StoryboardState>((set) => ({
             }
           : section,
       ),
-      lastSavedLabel: "Section regenerated just now",
+      lastSavedLabel: "Section regenerated locally",
     })),
+  hydrateFromStorage: () => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+
+      if (!raw) {
+        set({
+          hydrated: true,
+          lastSavedLabel: "Fresh workspace ready",
+        });
+        return;
+      }
+
+      const parsed = JSON.parse(raw) as PersistedStoryboardState;
+
+      set({
+        prompt: parsed.prompt,
+        activeTemplate: parsed.activeTemplate,
+        sections: parsed.sections,
+        hydrated: true,
+        lastSavedLabel: "Restored from local storage",
+      });
+    } catch {
+      set({
+        hydrated: true,
+        lastSavedLabel: "Storage restore failed, using defaults",
+      });
+    }
+  },
+  saveToStorage: () => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const state = get();
+
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(
+        getPersistableState({
+          prompt: state.prompt,
+          activeTemplate: state.activeTemplate,
+          sections: state.sections,
+        }),
+      ),
+    );
+
+    set({
+      lastSavedLabel: "Saved to local storage",
+    });
+  },
 }));

@@ -1,6 +1,7 @@
 import { Clock3, CopyPlus, History, ShieldCheck } from "lucide-react";
 
 import { Sidebar } from "../../components/layout/sidebar";
+import { useStoryboardStore } from "../../store/use-storyboard-store";
 
 const events = [
   "Initial artifact generated from launch brief prompt",
@@ -9,6 +10,9 @@ const events = [
 ];
 
 export function HistoryPanel() {
+  const hydrated = useStoryboardStore((state) => state.hydrated);
+  const lastSavedLabel = useStoryboardStore((state) => state.lastSavedLabel);
+
   return (
     <Sidebar eyebrow="Timeline" title="Session History" className="h-full">
       <div className="space-y-5">
@@ -18,16 +22,25 @@ export function HistoryPanel() {
             Local-first draft safety
           </div>
           <p className="mt-3 text-sm leading-7 text-[var(--text-muted)]">
-            We will keep edits recoverable with snapshots, clear save states,
-            and safe regeneration boundaries.
+            We keep edits recoverable with snapshots, visible save states, and a
+            workspace that restores after refresh.
           </p>
         </div>
 
         <div className="rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] p-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-[var(--text)]">
-            <History size={16} className="text-[var(--accent)]" />
-            Recent activity
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-[var(--text)]">
+              <History size={16} className="text-[var(--accent)]" />
+              Recent activity
+            </div>
+            <span className="rounded-full border border-[var(--panel-border)] px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--text-faint)]">
+              {hydrated ? "Hydrated" : "Loading"}
+            </span>
           </div>
+
+          <p className="mt-3 text-sm text-[var(--text-muted)]">
+            {lastSavedLabel}
+          </p>
 
           <div className="mt-4 space-y-3">
             {events.map((event, index) => (
