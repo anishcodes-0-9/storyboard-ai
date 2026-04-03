@@ -20,6 +20,17 @@ export type StoryboardSnapshot = {
   sections: StoryboardSection[];
 };
 
+export type StoryboardArtifact = {
+  id: string;
+  title: string;
+  subtitle: string;
+  updatedAt: string;
+  prompt: string;
+  activeTemplate: "launch-brief" | "product-strategy" | "exec-summary";
+  sections: StoryboardSection[];
+  snapshots: StoryboardSnapshot[];
+};
+
 type StoryboardState = {
   prompt: string;
   activeTemplate: "launch-brief" | "product-strategy" | "exec-summary";
@@ -28,6 +39,8 @@ type StoryboardState = {
   artifactTitle: string;
   artifactSubtitle: string;
   snapshots: StoryboardSnapshot[];
+  artifacts: StoryboardArtifact[];
+  activeArtifactId: string | null;
   hydrated: boolean;
   isGenerating: boolean;
   setPrompt: (value: string) => void;
@@ -38,6 +51,8 @@ type StoryboardState = {
   reorderSections: (activeId: string, overId: string) => void;
   saveSnapshot: () => void;
   restoreSnapshot: (snapshotId: string) => void;
+  saveArtifact: () => void;
+  loadArtifact: (artifactId: string) => void;
   hydrateFromStorage: () => void;
   saveToStorage: () => void;
 };
@@ -50,6 +65,8 @@ type PersistedStoryboardState = Pick<
   | "artifactTitle"
   | "artifactSubtitle"
   | "snapshots"
+  | "artifacts"
+  | "activeArtifactId"
 >;
 
 const STORAGE_KEY = "storyboard-ai.workspace";
@@ -141,6 +158,8 @@ function getPersistableState(
     | "artifactTitle"
     | "artifactSubtitle"
     | "snapshots"
+    | "artifacts"
+    | "activeArtifactId"
   >,
 ): PersistedStoryboardState {
   return {
@@ -150,6 +169,8 @@ function getPersistableState(
     artifactTitle: state.artifactTitle,
     artifactSubtitle: state.artifactSubtitle,
     snapshots: state.snapshots,
+    artifacts: state.artifacts,
+    activeArtifactId: state.activeArtifactId,
   };
 }
 
@@ -255,8 +276,36 @@ function cloneSections(sections: StoryboardSection[]) {
   }));
 }
 
+function cloneSnapshots(snapshots: StoryboardSnapshot[]) {
+  return snapshots.map((snapshot) => ({
+    ...snapshot,
+    sections: cloneSections(snapshot.sections),
+  }));
+}
+
 function createSnapshotLabel(title: string, count: number) {
   return `${title || "Untitled Storyboard"} · Snapshot ${count}`;
+}
+
+function createArtifactLabelState(
+  state: Pick<
+    StoryboardState,
+    | "prompt"
+    | "activeTemplate"
+    | "sections"
+    | "artifactTitle"
+    | "artifactSubtitle"
+    | "snapshots"
+  >,
+) {
+  return {
+    title: state.artifactTitle,
+    subtitle: state.artifactSubtitle,
+    prompt: state.prompt,
+    activeTemplate: state.activeTemplate,
+    sections: cloneSections(state.sections),
+    snapshots: cloneSnapshots(state.snapshots),
+  };
 }
 
 export const useStoryboardStore = create<StoryboardState>((set, get) => ({
@@ -268,6 +317,8 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
   artifactTitle: "New Product Launch",
   artifactSubtitle: "Launch Brief generated from your latest prompt",
   snapshots: [],
+  artifacts: [],
+  activeArtifactId: null,
   hydrated: false,
   isGenerating: false,
   setPrompt: (value) =>
@@ -382,6 +433,44 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
         lastSavedLabel: `Restored ${snapshot.label}`,
       };
     }),
+  saveArtifact: () =>
+    set((state) => {
+      const now = new Date().toISOString();
+      const artifactId = state.activeArtifactId ?? crypto.randomUUID();
+      const nextArtifact: StoryboardArtifact = {
+        id: artifactId,
+        updatedAt: now,
+        ...createArtifactLabelState(state),
+      };
+
+      const remaining = state.artifacts.filter(
+        (artifact) => artifact.id !== artifactId,
+      );
+
+      return {
+        artifacts: [nextArtifact, ...remaining].slice(0, 12),
+        activeArtifactId: artifactId,
+        lastSavedLabel: "Artifact saved to library",
+      };
+    }),
+  loadArtifact: (artifactId) =>
+    set((state) => {
+      const artifact = state.artifacts.find((item) => item.id === artifactId);
+      if (!artifact) {
+        return state;
+      }
+
+      return {
+        prompt: artifact.prompt,
+        activeTemplate: artifact.activeTemplate,
+        sections: cloneSections(artifact.sections),
+        artifactTitle: artifact.title,
+        artifactSubtitle: artifact.subtitle,
+        snapshots: cloneSnapshots(artifact.snapshots),
+        activeArtifactId: artifact.id,
+        lastSavedLabel: `Loaded ${artifact.title}`,
+      };
+    }),
   hydrateFromStorage: () => {
     if (typeof window === "undefined") {
       return;
@@ -409,6 +498,8 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
           parsed.artifactSubtitle ??
           "Launch Brief generated from your latest prompt",
         snapshots: parsed.snapshots ?? [],
+        artifacts: parsed.artifacts ?? [],
+        activeArtifactId: parsed.activeArtifactId ?? null,
         hydrated: true,
         lastSavedLabel: "Restored from local storage",
       });
@@ -436,6 +527,8 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
           artifactTitle: state.artifactTitle,
           artifactSubtitle: state.artifactSubtitle,
           snapshots: state.snapshots,
+          artifacts: state.artifacts,
+          activeArtifactId: state.activeArtifactId,
         }),
       ),
     );

@@ -1,10 +1,12 @@
 import {
+  BookOpen,
   Clock3,
   CopyPlus,
   History,
   RotateCcw,
   ShieldCheck,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import { Sidebar } from "../../components/layout/sidebar";
 import { useStoryboardStore } from "../../store/use-storyboard-store";
@@ -24,6 +26,7 @@ export function HistoryPanel() {
   const lastSavedLabel = useStoryboardStore((state) => state.lastSavedLabel);
   const snapshots = useStoryboardStore((state) => state.snapshots);
   const restoreSnapshot = useStoryboardStore((state) => state.restoreSnapshot);
+  const saveArtifact = useStoryboardStore((state) => state.saveArtifact);
 
   return (
     <Sidebar eyebrow="Timeline" title="Session History" className="h-full">
@@ -89,10 +92,22 @@ export function HistoryPanel() {
           </div>
         </div>
 
-        <button className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm text-[var(--text)] transition hover:border-[var(--accent)]">
+        <button
+          type="button"
+          onClick={saveArtifact}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm text-[var(--text)] transition hover:border-[var(--accent)]"
+        >
           <CopyPlus size={16} />
-          Duplicate current draft
+          Save to library
         </button>
+
+        <Link
+          to="/library"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm text-[var(--text)] transition hover:border-[var(--accent)]"
+        >
+          <BookOpen size={16} />
+          Open artifact library
+        </Link>
       </div>
     </Sidebar>
   );

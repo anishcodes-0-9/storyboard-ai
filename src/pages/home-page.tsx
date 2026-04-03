@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Layers3, Sparkles, Wand2 } from "lucide-react";
+import { ArrowRight, BookOpen, Layers3, Sparkles, Wand2 } from "lucide-react";
 import { motion } from "framer-motion";
+
+import { useStoryboardStore } from "../store/use-storyboard-store";
 
 const highlights = [
   {
@@ -24,6 +26,8 @@ const highlights = [
 ];
 
 export function HomePage() {
+  const artifacts = useStoryboardStore((state) => state.artifacts);
+
   return (
     <main className="relative overflow-hidden">
       <div className="mx-auto flex min-h-screen max-w-7xl flex-col px-6 pb-12 pt-8 sm:px-8 lg:px-10">
@@ -43,13 +47,22 @@ export function HomePage() {
             </p>
           </div>
 
-          <Link
-            to="/editor"
-            className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-5 py-3 text-sm text-[var(--text)] transition hover:border-[var(--accent)] hover:bg-[var(--panel-strong)]"
-          >
-            Open editor
-            <ArrowRight size={16} />
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/library"
+              className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-5 py-3 text-sm text-[var(--text)] transition hover:border-[var(--accent)] hover:bg-[var(--panel-strong)]"
+            >
+              <BookOpen size={16} />
+              Library
+            </Link>
+            <Link
+              to="/editor"
+              className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-5 py-3 text-sm text-[var(--text)] transition hover:border-[var(--accent)] hover:bg-[var(--panel-strong)]"
+            >
+              Open editor
+              <ArrowRight size={16} />
+            </Link>
+          </div>
         </motion.header>
 
         <section className="flex flex-1 items-center py-16">
@@ -103,52 +116,45 @@ export function HomePage() {
                 <div className="flex items-center justify-between border-b border-[var(--panel-border)] pb-4">
                   <div>
                     <p className="text-xs uppercase tracking-[0.28em] text-[var(--accent)]">
-                      Sample Artifact
+                      Saved Artifacts
                     </p>
                     <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em]">
-                      New Product Launch
+                      {artifacts.length > 0
+                        ? `${artifacts.length} drafts in library`
+                        : "No drafts yet"}
                     </h2>
                   </div>
                   <div className="rounded-full border border-[var(--panel-border)] px-3 py-1 text-xs text-[var(--text-muted)]">
-                    Executive brief
+                    Retrieval ready
                   </div>
                 </div>
 
                 <div className="space-y-4 py-5">
-                  <div className="rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] p-4">
-                    <p className="text-xs uppercase tracking-[0.24em] text-[var(--accent)]">
-                      Summary
-                    </p>
-                    <p className="mt-3 text-sm leading-7 text-[var(--text-muted)]">
-                      A concise launch story that aligns the market problem,
-                      product wedge, rollout phases, and success metrics into
-                      one review-ready narrative.
-                    </p>
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
+                  {artifacts.length === 0 ? (
                     <div className="rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] p-4">
-                      <p className="text-xs uppercase tracking-[0.24em] text-[var(--accent)]">
-                        Key Themes
+                      <p className="text-sm leading-7 text-[var(--text-muted)]">
+                        Save artifacts from the editor to build a reusable
+                        library you can come back to later.
                       </p>
-                      <ul className="mt-3 space-y-2 text-sm text-[var(--text-muted)]">
-                        <li>Market urgency</li>
-                        <li>Product differentiation</li>
-                        <li>Rollout confidence</li>
-                      </ul>
                     </div>
-
-                    <div className="rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] p-4">
-                      <p className="text-xs uppercase tracking-[0.24em] text-[var(--accent)]">
-                        Milestones
-                      </p>
-                      <ul className="mt-3 space-y-2 text-sm text-[var(--text-muted)]">
-                        <li>Beta narrative</li>
-                        <li>Launch assets</li>
-                        <li>Performance review</li>
-                      </ul>
-                    </div>
-                  </div>
+                  ) : (
+                    artifacts.slice(0, 3).map((artifact) => (
+                      <div
+                        key={artifact.id}
+                        className="rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] p-4"
+                      >
+                        <p className="text-xs uppercase tracking-[0.24em] text-[var(--accent)]">
+                          Artifact
+                        </p>
+                        <p className="mt-2 text-lg font-medium text-[var(--text)]">
+                          {artifact.title}
+                        </p>
+                        <p className="mt-2 text-sm leading-7 text-[var(--text-muted)]">
+                          {artifact.subtitle}
+                        </p>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </motion.div>

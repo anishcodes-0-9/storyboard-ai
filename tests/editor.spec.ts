@@ -208,4 +208,40 @@ test.describe("Storyboard editor", () => {
     await expect(page.getByText("Snapshot 1", { exact: true })).toBeVisible();
     await expect(page.getByText("Snapshot 2", { exact: true })).toBeVisible();
   });
+  test("saves an artifact to the library and reloads it", async ({ page }) => {
+    await page.goto("/editor");
+
+    const prompt = page.locator("textarea").first();
+    await prompt.fill("Library artifact prompt");
+    await page.getByRole("button", { name: /Generate storyboard/i }).click();
+
+    await page.getByRole("button", { name: /Save to library/i }).click();
+
+    await page.waitForTimeout(800);
+    await page.goto("/library");
+
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+        name: /return to previous storyboard drafts/i,
+      }),
+    ).toBeVisible();
+
+    await expect(
+      page.getByRole("button", { name: /Open artifact/i }),
+    ).toHaveCount(1);
+    await page.getByRole("button", { name: /Open artifact/i }).click();
+
+    await expect(page.locator("textarea").first()).toHaveValue(
+      "Library artifact prompt",
+    );
+
+    await page.waitForTimeout(800);
+    await page.reload();
+
+    await page.goto("/library");
+    await expect(
+      page.getByRole("button", { name: /Open artifact/i }),
+    ).toHaveCount(1);
+  });
 });
