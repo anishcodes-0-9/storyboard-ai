@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import { Download, Grip, Share2, Sparkles } from "lucide-react";
 import {
   closestCenter,
@@ -9,6 +10,7 @@ import {
 } from "@dnd-kit/core";
 import { rectSortingStrategy, SortableContext } from "@dnd-kit/sortable";
 
+import { exportElementToPdf } from "../../lib/export-pdf";
 import { useStoryboardStore } from "../../store/use-storyboard-store";
 import { StoryboardSectionCard } from "./storyboard-section-card";
 
@@ -21,6 +23,9 @@ export function StoryboardCanvas() {
     reorderSections,
   } = useStoryboardStore();
 
+  const [isExporting, setIsExporting] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -28,6 +33,19 @@ export function StoryboardCanvas() {
       },
     }),
   );
+
+  async function handleExport() {
+    if (!exportRef.current || isExporting) {
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+      await exportElementToPdf(exportRef.current, artifactTitle);
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -77,34 +95,43 @@ export function StoryboardCanvas() {
             <Share2 size={15} />
             Share
           </button>
-          <button className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,var(--accent)_0%,var(--accent-strong)_100%)] px-4 py-2 text-sm font-medium text-[#1b130f] transition hover:scale-[1.01]">
+          <button
+            type="button"
+            onClick={() => {
+              void handleExport();
+            }}
+            disabled={isExporting}
+            className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,var(--accent)_0%,var(--accent-strong)_100%)] px-4 py-2 text-sm font-medium text-[#1b130f] transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70"
+          >
             <Download size={15} />
-            Export PDF
+            {isExporting ? "Exporting..." : "Export PDF"}
           </button>
         </div>
       </div>
 
-      <div className="mt-5 flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-[var(--text-faint)]">
-        <Grip size={14} />
-        Drag sections to reorder the artifact
-      </div>
+      <div ref={exportRef} className="mt-5">
+        <div className="flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-[var(--text-faint)]">
+          <Grip size={14} />
+          Drag sections to reorder the artifact
+        </div>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={sections.map((section) => section.id)}
-          strategy={rectSortingStrategy}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
         >
-          <div className="mt-5 grid gap-4 xl:grid-cols-2">
-            {sections.map((section) => (
-              <StoryboardSectionCard key={section.id} section={section} />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+          <SortableContext
+            items={sections.map((section) => section.id)}
+            strategy={rectSortingStrategy}
+          >
+            <div className="mt-5 grid gap-4 xl:grid-cols-2">
+              {sections.map((section) => (
+                <StoryboardSectionCard key={section.id} section={section} />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      </div>
     </section>
   );
 }
