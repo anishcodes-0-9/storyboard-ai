@@ -1,10 +1,37 @@
 import { Download, Grip, Share2 } from "lucide-react";
+import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import { rectSortingStrategy, SortableContext } from "@dnd-kit/sortable";
 
 import { useStoryboardStore } from "../../store/use-storyboard-store";
 import { StoryboardSectionCard } from "./storyboard-section-card";
 
 export function StoryboardCanvas() {
-  const { sections, activeTemplate } = useStoryboardStore();
+  const { sections, activeTemplate, reorderSections } = useStoryboardStore();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+  );
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    reorderSections(String(active.id), String(over.id));
+  }
 
   return (
     <section className="rounded-[32px] border border-[var(--panel-border)] bg-[rgba(16,12,11,0.82)] p-5 shadow-[var(--shadow-lg)] backdrop-blur-xl">
@@ -40,14 +67,25 @@ export function StoryboardCanvas() {
 
       <div className="mt-5 flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-[var(--text-faint)]">
         <Grip size={14} />
-        Reorderable sections will come next
+        Drag sections to reorder the artifact
       </div>
 
-      <div className="mt-5 grid gap-4 xl:grid-cols-2">
-        {sections.map((section) => (
-          <StoryboardSectionCard key={section.id} section={section} />
-        ))}
-      </div>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={sections.map((section) => section.id)}
+          strategy={rectSortingStrategy}
+        >
+          <div className="mt-5 grid gap-4 xl:grid-cols-2">
+            {sections.map((section) => (
+              <StoryboardSectionCard key={section.id} section={section} />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
     </section>
   );
 }

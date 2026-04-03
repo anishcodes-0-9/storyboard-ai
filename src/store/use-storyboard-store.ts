@@ -19,6 +19,7 @@ type StoryboardState = {
   setTemplate: (value: StoryboardState["activeTemplate"]) => void;
   updateSection: (id: string, content: string[]) => void;
   regenerateSection: (id: string) => void;
+  reorderSections: (activeId: string, overId: string) => void;
   hydrateFromStorage: () => void;
   saveToStorage: () => void;
 };
@@ -112,6 +113,13 @@ function getPersistableState(
   };
 }
 
+function moveItem<T>(items: T[], fromIndex: number, toIndex: number) {
+  const next = [...items];
+  const [moved] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, moved);
+  return next;
+}
+
 export const useStoryboardStore = create<StoryboardState>((set, get) => ({
   prompt:
     "Create a launch-ready storyboard for an AI tool that converts rough product ideas into polished presentation narratives for team reviews.",
@@ -155,6 +163,24 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
       ),
       lastSavedLabel: "Section regenerated locally",
     })),
+  reorderSections: (activeId, overId) =>
+    set((state) => {
+      const fromIndex = state.sections.findIndex(
+        (section) => section.id === activeId,
+      );
+      const toIndex = state.sections.findIndex(
+        (section) => section.id === overId,
+      );
+
+      if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+        return state;
+      }
+
+      return {
+        sections: moveItem(state.sections, fromIndex, toIndex),
+        lastSavedLabel: "Section order updated locally",
+      };
+    }),
   hydrateFromStorage: () => {
     if (typeof window === "undefined") {
       return;

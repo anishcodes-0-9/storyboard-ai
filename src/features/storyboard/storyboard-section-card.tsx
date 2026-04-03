@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
-import { Check, PenLine, RefreshCcw, X } from "lucide-react";
+import { Check, GripVertical, PenLine, RefreshCcw, X } from "lucide-react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 import { cn } from "../../lib/utils";
 import type { StoryboardSection } from "../../store/use-storyboard-store";
@@ -13,6 +15,18 @@ export function StoryboardSectionCard({ section }: StoryboardSectionCardProps) {
   const { updateSection, regenerateSection } = useStoryboardStore();
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(section.content.join("\n"));
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: section.id,
+    disabled: isEditing,
+  });
 
   const lineCountLabel = useMemo(() => {
     return `${section.content.length} block${section.content.length === 1 ? "" : "s"}`;
@@ -46,19 +60,39 @@ export function StoryboardSectionCard({ section }: StoryboardSectionCardProps) {
   }
 
   return (
-    <article className="rounded-[28px] border border-[var(--panel-border)] bg-[rgba(20,16,14,0.92)] p-5 shadow-[var(--shadow-md)]">
+    <article
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+      className={cn(
+        "rounded-[28px] border border-[var(--panel-border)] bg-[rgba(20,16,14,0.92)] p-5 shadow-[var(--shadow-md)]",
+        isDragging && "opacity-70 ring-1 ring-[var(--accent)]",
+      )}
+    >
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--panel-border)] pb-4">
         <div>
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              {...attributes}
+              {...listeners}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--panel)] text-[var(--text-faint)] transition hover:border-[var(--accent)] hover:text-[var(--text)]"
+            >
+              <GripVertical size={14} />
+            </button>
+
             <p className="text-[11px] uppercase tracking-[0.3em] text-[var(--accent)]">
               {section.kind}
             </p>
+
             <span className="rounded-full border border-[var(--panel-border)] px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[var(--text-faint)]">
               {lineCountLabel}
             </span>
           </div>
 
-          <h3 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-[var(--text)]">
+          <h3 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-[var(--text)]">
             {section.title}
           </h3>
 
