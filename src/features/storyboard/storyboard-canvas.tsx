@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Download, Grip, Share2, Sparkles } from "lucide-react";
+import { Check, Download, Grip, Share2, Sparkles } from "lucide-react";
 import {
   closestCenter,
   DndContext,
@@ -11,8 +11,15 @@ import {
 import { rectSortingStrategy, SortableContext } from "@dnd-kit/sortable";
 
 import { exportElementToPdf } from "../../lib/export-pdf";
+import { buildStoryboardMarkdown } from "../../lib/export-markdown";
 import { useStoryboardStore } from "../../store/use-storyboard-store";
 import { StoryboardSectionCard } from "./storyboard-section-card";
+
+const templateLabels = {
+  "launch-brief": "Launch Brief",
+  "product-strategy": "Product Strategy",
+  "exec-summary": "Executive Summary",
+} as const;
 
 export function StoryboardCanvas() {
   const {
@@ -21,9 +28,13 @@ export function StoryboardCanvas() {
     artifactTitle,
     artifactSubtitle,
     reorderSections,
+    lastSavedLabel,
   } = useStoryboardStore();
 
   const [isExporting, setIsExporting] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">(
+    "idle",
+  );
   const exportRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
@@ -44,6 +55,28 @@ export function StoryboardCanvas() {
       await exportElementToPdf(exportRef.current, artifactTitle);
     } finally {
       setIsExporting(false);
+    }
+  }
+
+  async function handleCopy() {
+    try {
+      const markdown = buildStoryboardMarkdown({
+        title: artifactTitle,
+        subtitle: artifactSubtitle,
+        templateLabel: templateLabels[activeTemplate],
+        sections,
+      });
+
+      await navigator.clipboard.writeText(markdown);
+      setCopyState("copied");
+      window.setTimeout(() => {
+        setCopyState("idle");
+      }, 1500);
+    } catch {
+      setCopyState("failed");
+      window.setTimeout(() => {
+        setCopyState("idle");
+      }, 2000);
     }
   }
 
@@ -76,6 +109,9 @@ export function StoryboardCanvas() {
             out, with editable sections that can later support regenerate,
             reorder, export, and share actions.
           </p>
+          <p className="mt-3 text-xs uppercase tracking-[0.18em] text-[var(--text-faint)]">
+            {lastSavedLabel}
+          </p>
         </div>
 
         <div className="flex flex-wrap gap-3">
@@ -83,17 +119,25 @@ export function StoryboardCanvas() {
             aria-label="Active template"
             className="rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-2 text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]"
           >
-            {
-              {
-                "launch-brief": "Launch Brief",
-                "product-strategy": "Product Strategy",
-                "exec-summary": "Executive Summary",
-              }[activeTemplate]
-            }
+            {templateLabels[activeTemplate]}
           </div>
-          <button className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-2 text-sm text-[var(--text)] transition hover:border-[var(--accent)]">
-            <Share2 size={15} />
-            Share
+          <button
+            type="button"
+            onClick={() => {
+              void handleCopy();
+            }}
+            className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-2 text-sm text-[var(--text)] transition hover:border-[var(--accent)]"
+          >
+            {copyState === "copied" ? (
+              <Check size={15} />
+            ) : (
+              <Share2 size={15} />
+            )}
+            {copyState === "copied"
+              ? "Copied Markdown"
+              : copyState === "failed"
+                ? "Copy Failed"
+                : "Copy Output"}
           </button>
           <button
             type="button"
@@ -125,8 +169,12 @@ export function StoryboardCanvas() {
             strategy={rectSortingStrategy}
           >
             <div className="mt-5 grid gap-4 xl:grid-cols-2">
-              {sections.map((section) => (
-                <StoryboardSectionCard key={section.id} section={section} />
+              {sections.map((section, index) => (
+                <StoryboardSectionCard
+                  key={section.id}
+                  section={section}
+                  index={index}
+                />
               ))}
             </div>
           </SortableContext>

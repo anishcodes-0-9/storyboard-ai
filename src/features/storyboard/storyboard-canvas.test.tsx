@@ -11,9 +11,16 @@ vi.mock("../../lib/export-pdf", () => ({
 import { StoryboardCanvas } from "./storyboard-canvas";
 import { useStoryboardStore } from "../../store/use-storyboard-store";
 
-describe("StoryboardCanvas export", () => {
+describe("StoryboardCanvas actions", () => {
   beforeEach(() => {
     exportElementToPdf.mockReset();
+
+    Object.defineProperty(window.navigator, "clipboard", {
+      value: {
+        writeText: vi.fn().mockResolvedValue(undefined),
+      },
+      configurable: true,
+    });
 
     useStoryboardStore.setState({
       prompt: "Create a launch-ready storyboard",
@@ -56,5 +63,31 @@ describe("StoryboardCanvas export", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /export pdf/i })).toBeEnabled();
     });
+  });
+
+  it("copies markdown output to the clipboard", async () => {
+    const user = userEvent.setup();
+
+    render(<StoryboardCanvas />);
+
+    const clipboardSpy = vi.spyOn(window.navigator.clipboard, "writeText");
+
+    await user.click(screen.getByRole("button", { name: /copy output/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /copied markdown/i }),
+      ).toBeVisible();
+    });
+
+    expect(clipboardSpy).toHaveBeenCalledTimes(1);
+    expect(clipboardSpy.mock.calls[0][0]).toContain("# Launch Artifact");
+    expect(clipboardSpy.mock.calls[0][0]).toContain(
+      "> Launch Brief generated from your latest prompt",
+    );
+    expect(clipboardSpy.mock.calls[0][0]).toContain("## Narrative Summary");
+    expect(clipboardSpy.mock.calls[0][0]).toContain(
+      "- A polished artifact summary.",
+    );
   });
 });

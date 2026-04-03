@@ -9,9 +9,13 @@ import { useStoryboardStore } from "../../store/use-storyboard-store";
 
 type StoryboardSectionCardProps = {
   section: StoryboardSection;
+  index: number;
 };
 
-export function StoryboardSectionCard({ section }: StoryboardSectionCardProps) {
+export function StoryboardSectionCard({
+  section,
+  index,
+}: StoryboardSectionCardProps) {
   const { updateSection, regenerateSection } = useStoryboardStore();
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(section.content.join("\n"));
@@ -91,6 +95,10 @@ export function StoryboardSectionCard({ section }: StoryboardSectionCardProps) {
             <span className="rounded-full border border-[var(--panel-border)] px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[var(--text-faint)]">
               {lineCountLabel}
             </span>
+
+            <span className="rounded-full border border-[var(--panel-border)] px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[var(--text-faint)]">
+              {index + 1}
+            </span>
           </div>
 
           <h3 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-[var(--text)]">
@@ -160,9 +168,9 @@ export function StoryboardSectionCard({ section }: StoryboardSectionCardProps) {
 
       {!isEditing ? (
         <div className="mt-4 space-y-3">
-          {section.content.map((line) => (
+          {section.content.map((line, lineIndex) => (
             <div
-              key={line}
+              key={`${section.id}-${lineIndex}`}
               className="rounded-[20px] border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm leading-7 text-[var(--text-muted)]"
             >
               {line}
