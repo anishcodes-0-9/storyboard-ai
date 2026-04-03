@@ -4,13 +4,13 @@ test.describe("Storyboard editor", () => {
   test("loads the editor workspace", async ({ page }) => {
     await page.goto("/editor");
 
-    await expect(
-      page.getByRole("heading", { name: "Storyboard workspace" }),
-    ).toBeVisible();
-
+    await expect(page).toHaveTitle(/Storyboard AI/i);
     await expect(page.getByText("Prompt Composer")).toBeVisible();
     await expect(page.getByText("Session History")).toBeVisible();
     await expect(page.getByText("Hydrated")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: /new product launch/i }),
+    ).toBeVisible();
   });
 
   test("persists prompt edits after refresh", async ({ page }) => {
@@ -87,14 +87,14 @@ test.describe("Storyboard editor", () => {
     await page.getByRole("button", { name: /Product strategy/i }).click();
 
     await expect(page.getByLabel("Active template")).toHaveText(
-      /product strategy/i,
+      /Product Strategy/i,
     );
 
     await page.waitForTimeout(800);
     await page.reload();
 
     await expect(page.getByLabel("Active template")).toHaveText(
-      /product strategy/i,
+      /Product Strategy/i,
     );
   });
 
@@ -134,11 +134,49 @@ test.describe("Storyboard editor", () => {
 
     await page.getByRole("button", { name: /Executive summary/i }).click();
     await expect(page.getByLabel("Active template")).toHaveText(
-      /exec summary/i,
+      /Executive Summary/i,
     );
 
     await page.getByRole("button", { name: /Generate storyboard/i }).click();
 
-    await expect(page.getByText(/polished exec summary/i)).toBeVisible();
+    await expect(page.getByText(/polished executive summary/i)).toBeVisible();
+  });
+
+  test("generated artifact title updates and persists after refresh", async ({
+    page,
+  }) => {
+    await page.goto("/editor");
+
+    const prompt = page.locator("textarea").first();
+    await prompt.fill(
+      "create a storyboard for a football recruiting platform for college coaches",
+    );
+
+    await page.getByRole("button", { name: /Generate storyboard/i }).click();
+
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+        name: /create a storyboard for a football recruiting/i,
+      }),
+    ).toBeVisible();
+
+    await expect(
+      page.getByText(/Launch Brief generated from your latest prompt/i),
+    ).toBeVisible();
+
+    await page.waitForTimeout(800);
+    await page.reload();
+
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+        name: /create a storyboard for a football recruiting/i,
+      }),
+    ).toBeVisible();
+
+    await expect(
+      page.getByText(/Launch Brief generated from your latest prompt/i),
+    ).toBeVisible();
   });
 });
