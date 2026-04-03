@@ -17,6 +17,7 @@ type StoryboardState = {
   setPrompt: (value: string) => void;
   setTemplate: (value: StoryboardState["activeTemplate"]) => void;
   updateSection: (id: string, content: string[]) => void;
+  regenerateSection: (id: string) => void;
 };
 
 const initialSections: StoryboardSection[] = [
@@ -69,6 +70,28 @@ const initialSections: StoryboardSection[] = [
   },
 ];
 
+const regeneratedCopy: Record<string, string[]> = {
+  summary: [
+    "Storyboard AI converts rough product thinking into a polished narrative artifact designed for review, alignment, and presentation.",
+    "The experience emphasizes a fast first draft, section-level refinement, and a visual system strong enough to make the output feel immediately usable.",
+  ],
+  pillars: [
+    "Opinionated prompt-to-artifact workflow",
+    "Editable structure with low-friction iteration",
+    "Presentation-ready output with export potential",
+  ],
+  roadmap: [
+    "Phase 1: establish premium frontend shell and information hierarchy",
+    "Phase 2: unlock editing, persistence, and regeneration controls",
+    "Phase 3: connect live AI generation and export-ready delivery",
+  ],
+  success: [
+    "Users reach a credible first draft quickly",
+    "Manual changes survive iterative AI refinement",
+    "The artifact feels strong enough to share without redesigning it elsewhere",
+  ],
+};
+
 export const useStoryboardStore = create<StoryboardState>((set) => ({
   prompt:
     "Create a launch-ready storyboard for an AI tool that converts rough product ideas into polished presentation narratives for team reviews.",
@@ -91,11 +114,24 @@ export const useStoryboardStore = create<StoryboardState>((set) => ({
         section.id === id
           ? {
               ...section,
-              content,
+              content: content.filter((line) => line.trim().length > 0),
               status: "edited",
             }
           : section,
       ),
       lastSavedLabel: "Section edits saved locally",
+    })),
+  regenerateSection: (id) =>
+    set((state) => ({
+      sections: state.sections.map((section) =>
+        section.id === id
+          ? {
+              ...section,
+              content: regeneratedCopy[id] ?? section.content,
+              status: "ai",
+            }
+          : section,
+      ),
+      lastSavedLabel: "Section regenerated just now",
     })),
 }));
