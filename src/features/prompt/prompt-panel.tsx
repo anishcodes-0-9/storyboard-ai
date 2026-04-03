@@ -1,4 +1,4 @@
-import { FileText, Sparkles, Wand2 } from "lucide-react";
+import { FileText, LoaderCircle, Sparkles, Wand2 } from "lucide-react";
 
 import { Sidebar } from "../../components/layout/sidebar";
 import { cn } from "../../lib/utils";
@@ -23,14 +23,21 @@ const templates = [
 ] as const;
 
 export function PromptPanel() {
-  const { prompt, setPrompt, activeTemplate, setTemplate, lastSavedLabel } =
-    useStoryboardStore();
+  const {
+    prompt,
+    setPrompt,
+    activeTemplate,
+    setTemplate,
+    lastSavedLabel,
+    isGenerating,
+    generateStoryboard,
+  } = useStoryboardStore();
 
   return (
     <Sidebar eyebrow="Input" title="Prompt Composer" className="h-full">
       <div className="space-y-5">
         <div className="rounded-[24px] border border-[var(--panel-border)] bg-[var(--panel)] p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <p className="text-sm font-medium text-[var(--text)]">
               Source prompt
             </p>
@@ -49,10 +56,32 @@ export function PromptPanel() {
           />
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <button className="inline-flex items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,var(--accent)_0%,var(--accent-strong)_100%)] px-4 py-3 text-sm font-medium text-[#1b130f] transition hover:scale-[1.01]">
-              <Wand2 size={16} />
-              Generate storyboard
+            <button
+              type="button"
+              onClick={() => {
+                void generateStoryboard();
+              }}
+              disabled={isGenerating}
+              className={cn(
+                "inline-flex items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-medium transition",
+                isGenerating
+                  ? "cursor-not-allowed bg-[rgba(224,176,122,0.4)] text-[#2a1e18]"
+                  : "bg-[linear-gradient(135deg,var(--accent)_0%,var(--accent-strong)_100%)] text-[#1b130f] hover:scale-[1.01]",
+              )}
+            >
+              {isGenerating ? (
+                <>
+                  <LoaderCircle size={16} className="animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Wand2 size={16} />
+                  Generate storyboard
+                </>
+              )}
             </button>
+
             <button className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm text-[var(--text)] transition hover:border-[var(--accent)]">
               <FileText size={16} />
               Save snapshot
