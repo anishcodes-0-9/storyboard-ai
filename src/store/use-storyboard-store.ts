@@ -51,6 +51,7 @@ type StoryboardState = {
   reorderSections: (activeId: string, overId: string) => void;
   saveSnapshot: () => void;
   restoreSnapshot: (snapshotId: string) => void;
+  deleteSnapshot: (snapshotId: string) => void;
   saveArtifact: () => void;
   saveArtifactAsNew: () => void;
   loadArtifact: (artifactId: string) => void;
@@ -504,4 +505,11 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
       lastSavedLabel: "Saved to local storage",
     });
   },
+  deleteSnapshot: (snapshotId) =>
+    set((state) => ({
+      snapshots: state.snapshots.filter(
+        (snapshot) => snapshot.id !== snapshotId,
+      ),
+      lastSavedLabel: "Snapshot deleted locally",
+    })),
 }));

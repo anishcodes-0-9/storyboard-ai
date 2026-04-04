@@ -6,6 +6,7 @@ import {
   History,
   RotateCcw,
   ShieldCheck,
+  Trash2,
 } from "lucide-react";
 
 import { Link } from "react-router-dom";
@@ -28,6 +29,7 @@ export function HistoryPanel() {
   const lastSavedLabel = useStoryboardStore((state) => state.lastSavedLabel);
   const snapshots = useStoryboardStore((state) => state.snapshots);
   const restoreSnapshot = useStoryboardStore((state) => state.restoreSnapshot);
+  const deleteSnapshot = useStoryboardStore((state) => state.deleteSnapshot);
   const saveArtifact = useStoryboardStore((state) => state.saveArtifact);
   const saveArtifactAsNew = useStoryboardStore(
     (state) => state.saveArtifactAsNew,
@@ -83,14 +85,25 @@ export function HistoryPanel() {
                   <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
                     {formatSnapshotTime(snapshot.createdAt)}
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => restoreSnapshot(snapshot.id)}
-                    className="mt-3 inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-3 py-2 text-xs uppercase tracking-[0.16em] text-[var(--text)] transition hover:border-[var(--accent)]"
-                  >
-                    <RotateCcw size={13} />
-                    Restore
-                  </button>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => restoreSnapshot(snapshot.id)}
+                      className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-3 py-2 text-xs uppercase tracking-[0.16em] text-[var(--text)] transition hover:border-[var(--accent)]"
+                    >
+                      <RotateCcw size={13} />
+                      Restore
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => deleteSnapshot(snapshot.id)}
+                      className="inline-flex items-center gap-2 rounded-full border border-[rgba(240,139,125,0.24)] bg-[rgba(240,139,125,0.08)] px-3 py-2 text-xs uppercase tracking-[0.16em] text-[var(--danger)] transition hover:border-[var(--danger)]"
+                    >
+                      <Trash2 size={13} />
+                      Delete
+                    </button>
+                  </div>
                 </div>
               ))
             )}

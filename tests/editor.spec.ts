@@ -487,12 +487,15 @@ test.describe("Storyboard editor", () => {
     await page.waitForTimeout(800);
 
     await page.goto("/library");
+
+    await expect(
+      page.getByRole("link", { name: /Read-only view/i }),
+    ).toHaveCount(1);
     await page.getByRole("link", { name: /Read-only view/i }).click();
 
     await expect(
       page.getByRole("heading", { level: 1, name: "Shared Artifact" }),
     ).toBeVisible();
-
     await expect(
       page.getByText(/generated from your latest prompt/i),
     ).toBeVisible();
@@ -616,5 +619,78 @@ test.describe("Storyboard editor", () => {
 
     await expect(page.getByText("Original Artifact")).toBeVisible();
     await expect(page.getByText("Variant Artifact")).toBeVisible();
+  });
+  test("deletes a snapshot and keeps the remaining ones after refresh", async ({
+    page,
+  }) => {
+    await page.route("**/api/generate-storyboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          artifactTitle: "Snapshot Test Artifact",
+          artifactSubtitle: "Launch Brief generated from your latest prompt",
+          sections: [
+            {
+              id: "summary",
+              title: "Narrative Summary",
+              kind: "summary",
+              tone: "Confident",
+              status: "ai",
+              content: ["Snapshot summary 1", "Snapshot summary 2"],
+            },
+            {
+              id: "pillars",
+              title: "Strategic Pillars",
+              kind: "bullets",
+              tone: "Sharp",
+              status: "ai",
+              content: ["Snapshot pillar 1", "Snapshot pillar 2"],
+            },
+            {
+              id: "roadmap",
+              title: "Milestone Roadmap",
+              kind: "timeline",
+              tone: "Operational",
+              status: "ai",
+              content: ["Snapshot roadmap 1", "Snapshot roadmap 2"],
+            },
+            {
+              id: "success",
+              title: "Success Signals",
+              kind: "metrics",
+              tone: "Measured",
+              status: "ai",
+              content: ["Snapshot success 1", "Snapshot success 2"],
+            },
+          ],
+        }),
+      });
+    });
+
+    await page.goto("/editor");
+
+    const prompt = page.locator("textarea").first();
+
+    await prompt.fill("First snapshot");
+    await page.getByRole("button", { name: /Generate storyboard/i }).click();
+    await page.getByRole("button", { name: /Save snapshot/i }).click();
+
+    await prompt.fill("Second snapshot");
+    await page.getByRole("button", { name: /Generate storyboard/i }).click();
+    await page.getByRole("button", { name: /Save snapshot/i }).click();
+
+    await expect(page.getByText("Snapshot 1", { exact: true })).toBeVisible();
+    await expect(page.getByText("Snapshot 2", { exact: true })).toBeVisible();
+
+    const deleteButtons = page.getByRole("button", { name: /Delete/i });
+    await deleteButtons.nth(1).click();
+
+    await expect(page.getByRole("button", { name: /Delete/i })).toHaveCount(1);
+
+    await page.waitForTimeout(800);
+    await page.reload();
+
+    await expect(page.getByRole("button", { name: /Delete/i })).toHaveCount(1);
   });
 });

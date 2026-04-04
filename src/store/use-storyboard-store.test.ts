@@ -82,6 +82,40 @@ describe("useStoryboardStore snapshots and artifacts", () => {
     expect(restored.sections[0].content).toEqual(["Initial summary"]);
   });
 
+  it("deletes only the selected snapshot", () => {
+    vi.setSystemTime(new Date("2026-04-04T01:30:00.000Z"));
+    useStoryboardStore.getState().saveSnapshot();
+
+    useStoryboardStore.setState({
+      prompt: "Second prompt",
+      artifactTitle: "Second Artifact",
+      sections: [
+        {
+          id: "summary",
+          title: "Narrative Summary",
+          kind: "summary",
+          status: "edited",
+          tone: "Confident",
+          content: ["Second summary"],
+        },
+      ],
+    });
+
+    vi.setSystemTime(new Date("2026-04-04T01:31:00.000Z"));
+    useStoryboardStore.getState().saveSnapshot();
+
+    const snapshotsBeforeDelete = useStoryboardStore.getState().snapshots;
+    expect(snapshotsBeforeDelete).toHaveLength(2);
+
+    const olderSnapshotId = snapshotsBeforeDelete[1].id;
+    useStoryboardStore.getState().deleteSnapshot(olderSnapshotId);
+
+    const snapshotsAfterDelete = useStoryboardStore.getState().snapshots;
+    expect(snapshotsAfterDelete).toHaveLength(1);
+    expect(snapshotsAfterDelete[0].artifactTitle).toBe("Second Artifact");
+    expect(snapshotsAfterDelete[0].id).not.toBe(olderSnapshotId);
+  });
+
   it("saves and loads artifacts", () => {
     const firstNow = new Date("2026-04-04T02:00:00.000Z");
     vi.setSystemTime(firstNow);
