@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useStoryboardStore } from "./use-storyboard-store";
 
@@ -120,6 +120,37 @@ describe("useStoryboardStore snapshots and artifacts", () => {
     expect(restored.activeTemplate).toBe("launch-brief");
     expect(restored.sections[0].content).toEqual(["Initial summary"]);
     expect(restored.activeArtifactId).toBe(firstArtifactId);
+  });
+
+  it("saves artifact as a new entry", () => {
+    useStoryboardStore.getState().saveArtifact();
+
+    const originalArtifactId = useStoryboardStore.getState().artifacts[0].id;
+
+    useStoryboardStore.setState({
+      prompt: "Variant prompt",
+      artifactTitle: "Variant Artifact",
+      artifactSubtitle: "Launch Brief generated from your latest prompt",
+      sections: [
+        {
+          id: "summary",
+          title: "Narrative Summary",
+          kind: "summary",
+          status: "edited",
+          tone: "Confident",
+          content: ["Variant summary"],
+        },
+      ],
+    });
+
+    useStoryboardStore.getState().saveArtifactAsNew();
+
+    const state = useStoryboardStore.getState();
+    expect(state.artifacts).toHaveLength(2);
+    expect(state.artifacts[0].title).toBe("Variant Artifact");
+    expect(state.artifacts[1].title).toBe("Initial Artifact");
+    expect(state.artifacts[0].id).not.toBe(originalArtifactId);
+    expect(state.activeArtifactId).toBe(state.artifacts[0].id);
   });
 
   it("generates storyboard from the API response", async () => {

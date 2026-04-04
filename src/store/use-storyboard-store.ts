@@ -52,6 +52,7 @@ type StoryboardState = {
   saveSnapshot: () => void;
   restoreSnapshot: (snapshotId: string) => void;
   saveArtifact: () => void;
+  saveArtifactAsNew: () => void;
   loadArtifact: (artifactId: string) => void;
   hydrateFromStorage: () => void;
   saveToStorage: () => void;
@@ -219,6 +220,25 @@ function createArtifactLabelState(
     snapshots: cloneSnapshots(state.snapshots),
   };
 }
+function createArtifactFromState(
+  state: Pick<
+    StoryboardState,
+    | "prompt"
+    | "activeTemplate"
+    | "sections"
+    | "artifactTitle"
+    | "artifactSubtitle"
+    | "snapshots"
+  >,
+  artifactId: string,
+  updatedAt: string,
+): StoryboardArtifact {
+  return {
+    id: artifactId,
+    updatedAt,
+    ...createArtifactLabelState(state),
+  };
+}
 
 export const useStoryboardStore = create<StoryboardState>((set, get) => ({
   prompt:
@@ -375,11 +395,7 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
     set((state) => {
       const now = new Date().toISOString();
       const artifactId = state.activeArtifactId ?? crypto.randomUUID();
-      const nextArtifact: StoryboardArtifact = {
-        id: artifactId,
-        updatedAt: now,
-        ...createArtifactLabelState(state),
-      };
+      const nextArtifact = createArtifactFromState(state, artifactId, now);
 
       const remaining = state.artifacts.filter(
         (artifact) => artifact.id !== artifactId,
@@ -391,6 +407,19 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
         lastSavedLabel: "Artifact saved to library",
       };
     }),
+  saveArtifactAsNew: () =>
+    set((state) => {
+      const now = new Date().toISOString();
+      const artifactId = crypto.randomUUID();
+      const nextArtifact = createArtifactFromState(state, artifactId, now);
+
+      return {
+        artifacts: [nextArtifact, ...state.artifacts].slice(0, 12),
+        activeArtifactId: artifactId,
+        lastSavedLabel: "Artifact saved as new entry",
+      };
+    }),
+
   loadArtifact: (artifactId) =>
     set((state) => {
       const artifact = state.artifacts.find((item) => item.id === artifactId);

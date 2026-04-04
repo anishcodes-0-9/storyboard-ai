@@ -2,10 +2,12 @@ import {
   BookOpen,
   Clock3,
   CopyPlus,
+  Files,
   History,
   RotateCcw,
   ShieldCheck,
 } from "lucide-react";
+
 import { Link } from "react-router-dom";
 
 import { Sidebar } from "../../components/layout/sidebar";
@@ -27,6 +29,9 @@ export function HistoryPanel() {
   const snapshots = useStoryboardStore((state) => state.snapshots);
   const restoreSnapshot = useStoryboardStore((state) => state.restoreSnapshot);
   const saveArtifact = useStoryboardStore((state) => state.saveArtifact);
+  const saveArtifactAsNew = useStoryboardStore(
+    (state) => state.saveArtifactAsNew,
+  );
 
   return (
     <Sidebar eyebrow="Timeline" title="Session History" className="h-full">
@@ -92,14 +97,25 @@ export function HistoryPanel() {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={saveArtifact}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm text-[var(--text)] transition hover:border-[var(--accent)]"
-        >
-          <CopyPlus size={16} />
-          Save to library
-        </button>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={saveArtifact}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-3 text-sm text-[var(--text)] transition hover:border-[var(--accent)]"
+          >
+            <CopyPlus size={16} />
+            Save to library
+          </button>
+
+          <button
+            type="button"
+            onClick={saveArtifactAsNew}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[var(--panel-border)] bg-[rgba(224,176,122,0.08)] px-4 py-3 text-sm text-[var(--text)] transition hover:border-[var(--accent)]"
+          >
+            <Files size={16} />
+            Save as new
+          </button>
+        </div>
 
         <Link
           to="/library"

@@ -97,6 +97,7 @@ test.describe("Storyboard editor", () => {
       /Product Strategy/i,
     );
   });
+
   test("generates storyboard content from the prompt", async ({ page }) => {
     await page.route("**/api/generate-storyboard", async (route) => {
       await route.fulfill({
@@ -347,7 +348,53 @@ test.describe("Storyboard editor", () => {
     await expect(page.getByText("Snapshot 1", { exact: true })).toBeVisible();
     await expect(page.getByText("Snapshot 2", { exact: true })).toBeVisible();
   });
+
   test("saves an artifact to the library and reloads it", async ({ page }) => {
+    await page.route("**/api/generate-storyboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          artifactTitle: "Library Artifact",
+          artifactSubtitle: "Launch Brief generated from your latest prompt",
+          sections: [
+            {
+              id: "summary",
+              title: "Narrative Summary",
+              kind: "summary",
+              tone: "Confident",
+              status: "ai",
+              content: ["Library summary 1", "Library summary 2"],
+            },
+            {
+              id: "pillars",
+              title: "Strategic Pillars",
+              kind: "bullets",
+              tone: "Sharp",
+              status: "ai",
+              content: ["Library pillar 1", "Library pillar 2"],
+            },
+            {
+              id: "roadmap",
+              title: "Milestone Roadmap",
+              kind: "timeline",
+              tone: "Operational",
+              status: "ai",
+              content: ["Library roadmap 1", "Library roadmap 2"],
+            },
+            {
+              id: "success",
+              title: "Success Signals",
+              kind: "metrics",
+              tone: "Measured",
+              status: "ai",
+              content: ["Library success 1", "Library success 2"],
+            },
+          ],
+        }),
+      });
+    });
+
     await page.goto("/editor");
 
     const prompt = page.locator("textarea").first();
@@ -355,8 +402,8 @@ test.describe("Storyboard editor", () => {
     await page.getByRole("button", { name: /Generate storyboard/i }).click();
 
     await page.getByRole("button", { name: /Save to library/i }).click();
-
     await page.waitForTimeout(800);
+
     await page.goto("/library");
 
     await expect(
@@ -383,7 +430,53 @@ test.describe("Storyboard editor", () => {
       page.getByRole("button", { name: /Open artifact/i }),
     ).toHaveCount(1);
   });
+
   test("opens a saved artifact in read-only share view", async ({ page }) => {
+    await page.route("**/api/generate-storyboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          artifactTitle: "Shared Artifact",
+          artifactSubtitle: "Launch Brief generated from your latest prompt",
+          sections: [
+            {
+              id: "summary",
+              title: "Narrative Summary",
+              kind: "summary",
+              tone: "Confident",
+              status: "ai",
+              content: ["Shared summary 1", "Shared summary 2"],
+            },
+            {
+              id: "pillars",
+              title: "Strategic Pillars",
+              kind: "bullets",
+              tone: "Sharp",
+              status: "ai",
+              content: ["Shared pillar 1", "Shared pillar 2"],
+            },
+            {
+              id: "roadmap",
+              title: "Milestone Roadmap",
+              kind: "timeline",
+              tone: "Operational",
+              status: "ai",
+              content: ["Shared roadmap 1", "Shared roadmap 2"],
+            },
+            {
+              id: "success",
+              title: "Success Signals",
+              kind: "metrics",
+              tone: "Measured",
+              status: "ai",
+              content: ["Shared success 1", "Shared success 2"],
+            },
+          ],
+        }),
+      });
+    });
+
     await page.goto("/editor");
 
     const prompt = page.locator("textarea").first();
@@ -396,7 +489,10 @@ test.describe("Storyboard editor", () => {
     await page.goto("/library");
     await page.getByRole("link", { name: /Read-only view/i }).click();
 
-    await expect(page.getByText(/shared artifact/i)).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Shared Artifact" }),
+    ).toBeVisible();
+
     await expect(
       page.getByText(/generated from your latest prompt/i),
     ).toBeVisible();
@@ -410,5 +506,115 @@ test.describe("Storyboard editor", () => {
     await expect(
       page.getByRole("button", { name: /Regenerate Narrative Summary/i }),
     ).toHaveCount(0);
+  });
+
+  test("saves an artifact as a new library entry", async ({ page }) => {
+    await page.goto("/editor");
+
+    await page.route("**/api/generate-storyboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          artifactTitle: "Original Artifact",
+          artifactSubtitle: "Launch Brief generated from your latest prompt",
+          sections: [
+            {
+              id: "summary",
+              title: "Narrative Summary",
+              kind: "summary",
+              tone: "Confident",
+              status: "ai",
+              content: ["Original summary 1", "Original summary 2"],
+            },
+            {
+              id: "pillars",
+              title: "Strategic Pillars",
+              kind: "bullets",
+              tone: "Sharp",
+              status: "ai",
+              content: ["Original pillar 1", "Original pillar 2"],
+            },
+            {
+              id: "roadmap",
+              title: "Milestone Roadmap",
+              kind: "timeline",
+              tone: "Operational",
+              status: "ai",
+              content: ["Original roadmap 1", "Original roadmap 2"],
+            },
+            {
+              id: "success",
+              title: "Success Signals",
+              kind: "metrics",
+              tone: "Measured",
+              status: "ai",
+              content: ["Original success 1", "Original success 2"],
+            },
+          ],
+        }),
+      });
+    });
+
+    const prompt = page.locator("textarea").first();
+    await prompt.fill("Original library prompt");
+    await page.getByRole("button", { name: /Generate storyboard/i }).click();
+    await page.getByRole("button", { name: /Save to library/i }).click();
+    await page.waitForTimeout(800);
+
+    await page.route("**/api/generate-storyboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          artifactTitle: "Variant Artifact",
+          artifactSubtitle: "Launch Brief generated from your latest prompt",
+          sections: [
+            {
+              id: "summary",
+              title: "Narrative Summary",
+              kind: "summary",
+              tone: "Confident",
+              status: "ai",
+              content: ["Variant summary 1", "Variant summary 2"],
+            },
+            {
+              id: "pillars",
+              title: "Strategic Pillars",
+              kind: "bullets",
+              tone: "Sharp",
+              status: "ai",
+              content: ["Variant pillar 1", "Variant pillar 2"],
+            },
+            {
+              id: "roadmap",
+              title: "Milestone Roadmap",
+              kind: "timeline",
+              tone: "Operational",
+              status: "ai",
+              content: ["Variant roadmap 1", "Variant roadmap 2"],
+            },
+            {
+              id: "success",
+              title: "Success Signals",
+              kind: "metrics",
+              tone: "Measured",
+              status: "ai",
+              content: ["Variant success 1", "Variant success 2"],
+            },
+          ],
+        }),
+      });
+    });
+
+    await prompt.fill("Variant library prompt");
+    await page.getByRole("button", { name: /Generate storyboard/i }).click();
+    await page.getByRole("button", { name: /Save as new/i }).click();
+    await page.waitForTimeout(800);
+
+    await page.goto("/library");
+
+    await expect(page.getByText("Original Artifact")).toBeVisible();
+    await expect(page.getByText("Variant Artifact")).toBeVisible();
   });
 });
