@@ -270,6 +270,59 @@ describe("useStoryboardStore snapshots and artifacts", () => {
 
     expect(fetchMock).not.toHaveBeenCalled();
   });
+  it("handles malformed generation payload gracefully", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        artifactTitle: "Broken Artifact",
+        artifactSubtitle: "Launch Brief generated from your latest prompt",
+        sections: "not-an-array",
+      }),
+    } as Response);
+
+    await useStoryboardStore.getState().generateStoryboard();
+
+    expect(useStoryboardStore.getState().lastSavedLabel).toBe(
+      "Generation failed. Check API/server setup.",
+    );
+    expect(useStoryboardStore.getState().isGenerating).toBe(false);
+    expect(useStoryboardStore.getState().artifactTitle).toBe(
+      "Initial Artifact",
+    );
+  });
+
+  it("hydrates safely from malformed stored JSON shape", () => {
+    const getItemMock = vi.spyOn(Storage.prototype, "getItem").mockReturnValue(
+      JSON.stringify({
+        prompt: 42,
+        activeTemplate: "broken-template",
+        sections: "bad-sections",
+        artifactTitle: ["wrong"],
+        artifactSubtitle: null,
+        snapshots: [{ bad: true }],
+        artifacts: [{ nope: true }],
+        activeArtifactId: 123,
+      }),
+    );
+
+    useStoryboardStore.getState().hydrateFromStorage();
+
+    const state = useStoryboardStore.getState();
+
+    expect(getItemMock).toHaveBeenCalled();
+    expect(state.hydrated).toBe(true);
+    expect(state.prompt).toBe("");
+    expect(state.activeTemplate).toBe("launch-brief");
+    expect(state.sections).toHaveLength(4);
+    expect(state.artifactTitle).toBe("New Product Launch");
+    expect(state.artifactSubtitle).toBe(
+      "Launch Brief generated from your latest prompt",
+    );
+    expect(state.snapshots).toEqual([]);
+    expect(state.artifacts).toEqual([]);
+    expect(state.activeArtifactId).toBeNull();
+    expect(state.lastSavedLabel).toBe("Restored from local storage");
+  });
 
   it("generates storyboard from the API response", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({

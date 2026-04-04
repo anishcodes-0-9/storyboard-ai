@@ -243,6 +243,160 @@ function createArtifactFromState(
   };
 }
 
+function createId() {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    return crypto.randomUUID();
+  }
+
+  return `sb-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function isValidSectionKind(
+  value: unknown,
+): value is StoryboardSection["kind"] {
+  return (
+    value === "summary" ||
+    value === "bullets" ||
+    value === "timeline" ||
+    value === "metrics"
+  );
+}
+
+function isValidSectionStatus(
+  value: unknown,
+): value is StoryboardSection["status"] {
+  return value === "ai" || value === "edited";
+}
+
+function sanitizeSections(value: unknown): StoryboardSection[] | null {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  const sections = value
+    .map((item, index): StoryboardSection | null => {
+      if (!item || typeof item !== "object") {
+        return null;
+      }
+
+      const candidate = item as Partial<StoryboardSection>;
+
+      if (
+        typeof candidate.id !== "string" ||
+        typeof candidate.title !== "string" ||
+        !isValidSectionKind(candidate.kind) ||
+        !isValidSectionStatus(candidate.status) ||
+        !Array.isArray(candidate.content)
+      ) {
+        return null;
+      }
+
+      const content = candidate.content.filter(
+        (line): line is string => typeof line === "string",
+      );
+
+      return {
+        id: candidate.id || `section-${index + 1}`,
+        title: candidate.title,
+        kind: candidate.kind,
+        status: candidate.status,
+        tone: typeof candidate.tone === "string" ? candidate.tone : undefined,
+        content,
+      };
+    })
+    .filter((section): section is StoryboardSection => section !== null);
+
+  return sections.length > 0 ? sections : null;
+}
+
+function sanitizeSnapshots(value: unknown): StoryboardSnapshot[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") {
+        return null;
+      }
+
+      const candidate = item as Partial<StoryboardSnapshot>;
+      const sections = sanitizeSections(candidate.sections);
+
+      if (
+        typeof candidate.id !== "string" ||
+        typeof candidate.label !== "string" ||
+        typeof candidate.createdAt !== "string" ||
+        typeof candidate.prompt !== "string" ||
+        (candidate.activeTemplate !== "launch-brief" &&
+          candidate.activeTemplate !== "product-strategy" &&
+          candidate.activeTemplate !== "exec-summary") ||
+        typeof candidate.artifactTitle !== "string" ||
+        typeof candidate.artifactSubtitle !== "string" ||
+        !sections
+      ) {
+        return null;
+      }
+
+      return {
+        id: candidate.id,
+        label: candidate.label,
+        createdAt: candidate.createdAt,
+        prompt: candidate.prompt,
+        activeTemplate: candidate.activeTemplate,
+        artifactTitle: candidate.artifactTitle,
+        artifactSubtitle: candidate.artifactSubtitle,
+        sections,
+      };
+    })
+    .filter((snapshot): snapshot is StoryboardSnapshot => snapshot !== null);
+}
+
+function sanitizeArtifacts(value: unknown): StoryboardArtifact[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") {
+        return null;
+      }
+
+      const candidate = item as Partial<StoryboardArtifact>;
+      const sections = sanitizeSections(candidate.sections);
+
+      if (
+        typeof candidate.id !== "string" ||
+        typeof candidate.title !== "string" ||
+        typeof candidate.subtitle !== "string" ||
+        typeof candidate.updatedAt !== "string" ||
+        typeof candidate.prompt !== "string" ||
+        (candidate.activeTemplate !== "launch-brief" &&
+          candidate.activeTemplate !== "product-strategy" &&
+          candidate.activeTemplate !== "exec-summary") ||
+        !sections
+      ) {
+        return null;
+      }
+
+      return {
+        id: candidate.id,
+        title: candidate.title,
+        subtitle: candidate.subtitle,
+        updatedAt: candidate.updatedAt,
+        prompt: candidate.prompt,
+        activeTemplate: candidate.activeTemplate,
+        sections,
+        snapshots: sanitizeSnapshots(candidate.snapshots),
+      };
+    })
+    .filter((artifact): artifact is StoryboardArtifact => artifact !== null);
+}
+
 function persistWorkspaceState(
   state: Pick<
     StoryboardState,
@@ -347,10 +501,19 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
       }
 
       const generated = await response.json();
+      const nextSections = sanitizeSections(generated.sections);
+
+      if (
+        typeof generated.artifactTitle !== "string" ||
+        typeof generated.artifactSubtitle !== "string" ||
+        !nextSections
+      ) {
+        throw new Error("Generation response payload was invalid");
+      }
 
       set((state) => ({
         isGenerating: false,
-        sections: generated.sections,
+        sections: nextSections,
         artifactTitle: generated.artifactTitle,
         artifactSubtitle: generated.artifactSubtitle,
         lastSavedLabel: "Storyboard generated with AI",
@@ -412,7 +575,7 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
     set((state) => {
       const nextCount = state.snapshots.length + 1;
       const snapshot: StoryboardSnapshot = {
-        id: crypto.randomUUID(),
+        id: createId(),
         label: createSnapshotLabel(state.artifactTitle, nextCount),
         createdAt: new Date().toISOString(),
         prompt: state.prompt,
@@ -484,7 +647,7 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
   saveArtifact: () =>
     set((state) => {
       const now = new Date().toISOString();
-      const artifactId = state.activeArtifactId ?? crypto.randomUUID();
+      const artifactId = state.activeArtifactId ?? createId();
       const nextArtifact = createArtifactFromState(state, artifactId, now);
 
       const remaining = state.artifacts.filter(
@@ -514,7 +677,7 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
   saveArtifactAsNew: () =>
     set((state) => {
       const now = new Date().toISOString();
-      const artifactId = crypto.randomUUID();
+      const artifactId = createId();
       const nextArtifact = createArtifactFromState(state, artifactId, now);
       const nextArtifacts = [nextArtifact, ...state.artifacts].slice(0, 12);
 
@@ -602,19 +765,35 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
         return;
       }
 
-      const parsed = JSON.parse(raw) as PersistedStoryboardState;
+      const parsed = JSON.parse(raw) as Partial<PersistedStoryboardState>;
+      const sections = sanitizeSections(parsed.sections) ?? initialSections;
+      const snapshots = sanitizeSnapshots(parsed.snapshots);
+      const artifacts = sanitizeArtifacts(parsed.artifacts);
+      const activeTemplate =
+        parsed.activeTemplate === "launch-brief" ||
+        parsed.activeTemplate === "product-strategy" ||
+        parsed.activeTemplate === "exec-summary"
+          ? parsed.activeTemplate
+          : "launch-brief";
 
       set({
-        prompt: parsed.prompt,
-        activeTemplate: parsed.activeTemplate,
-        sections: parsed.sections,
-        artifactTitle: parsed.artifactTitle ?? "New Product Launch",
+        prompt: typeof parsed.prompt === "string" ? parsed.prompt : "",
+        activeTemplate,
+        sections,
+        artifactTitle:
+          typeof parsed.artifactTitle === "string"
+            ? parsed.artifactTitle
+            : "New Product Launch",
         artifactSubtitle:
-          parsed.artifactSubtitle ??
-          "Launch Brief generated from your latest prompt",
-        snapshots: parsed.snapshots ?? [],
-        artifacts: parsed.artifacts ?? [],
-        activeArtifactId: parsed.activeArtifactId ?? null,
+          typeof parsed.artifactSubtitle === "string"
+            ? parsed.artifactSubtitle
+            : "Launch Brief generated from your latest prompt",
+        snapshots,
+        artifacts,
+        activeArtifactId:
+          typeof parsed.activeArtifactId === "string"
+            ? parsed.activeArtifactId
+            : null,
         hydrated: true,
         lastSavedLabel: "Restored from local storage",
       });
