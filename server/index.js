@@ -2,9 +2,15 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import OpenAI from "openai";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const app = express();
 const port = process.env.PORT || 8787;
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const distPath = path.resolve(__dirname, "../dist");
 
 app.use(cors());
 app.use(express.json());
@@ -144,6 +150,12 @@ Return:
   }
 });
 
-app.listen(port, () => {
-  console.log(`Storyboard API listening on http://localhost:${port}`);
+app.use(express.static(distPath));
+
+app.get("/*splat", (_req, res) => {
+  res.sendFile(path.join(distPath, "index.html"));
+});
+
+app.listen(port, "0.0.0.0", () => {
+  console.log(`Storyboard API listening on http://0.0.0.0:${port}`);
 });

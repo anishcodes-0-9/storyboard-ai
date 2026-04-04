@@ -8,6 +8,7 @@
     "dev:server": "node server/index.js",
     "dev:full": "concurrently \"npm run dev\" \"npm run dev:server\"",
     "build": "tsc -b && vite build",
+    "start": "node server/index.js",
     "lint": "eslint .",
     "test:e2e": "playwright test",
     "test:unit": "vitest run"
