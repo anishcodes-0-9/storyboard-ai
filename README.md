@@ -4,6 +4,8 @@ Storyboard AI is a full-stack AI product that turns a rough prompt into a polish
 
 Instead of giving you a raw wall of generated text, it gives you a structured artifact with editable sections, saved snapshots, reusable library entries, and a shareable read-only view. The goal is to make AI output feel like a working deliverable, not just a draft.
 
+## Live site: https://storyboard-ai-4f1d.onrender.com
+
 ## What This Project Does
 
 You start with a prompt.
