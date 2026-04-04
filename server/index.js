@@ -22,8 +22,6 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.post("/api/generate-storyboard", async (req, res) => {
-  const requestStartedAt = Date.now();
-
   try {
     if (!process.env.OPENAI_API_KEY) {
       return res.status(500).json({
@@ -45,14 +43,6 @@ app.post("/api/generate-storyboard", async (req, res) => {
 
     const templateLabel =
       templateLabelMap[template] ?? templateLabelMap["launch-brief"];
-
-    console.log("[generate-storyboard] request received", {
-      template: templateLabel,
-      promptLength: prompt.length,
-      startedAt: new Date(requestStartedAt).toISOString(),
-    });
-
-    const openAiStartedAt = Date.now();
 
     const response = await client.responses.create({
       model: "gpt-5-mini",
@@ -142,26 +132,11 @@ Return:
       },
     });
 
-    const openAiDurationMs = Date.now() - openAiStartedAt;
-    console.log("[generate-storyboard] OpenAI response received", {
-      durationMs: openAiDurationMs,
-    });
-
-    const parseStartedAt = Date.now();
     const payload = JSON.parse(response.output_text);
-    const parseDurationMs = Date.now() - parseStartedAt;
-
-    console.log("[generate-storyboard] payload parsed", {
-      parseDurationMs,
-      totalDurationMs: Date.now() - requestStartedAt,
-    });
 
     res.json(payload);
   } catch (error) {
     console.error("Storyboard generation failed:", error);
-    console.log("[generate-storyboard] request failed", {
-      totalDurationMs: Date.now() - requestStartedAt,
-    });
 
     res.status(500).json({
       error: "Generation failed. Please try again.",
