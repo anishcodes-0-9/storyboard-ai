@@ -62,10 +62,10 @@ export function PromptPanel() {
               onClick={() => {
                 void generateStoryboard();
               }}
-              disabled={isGenerating}
+              disabled={isGenerating || !prompt.trim()}
               className={cn(
                 "inline-flex items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-medium transition",
-                isGenerating
+                isGenerating || !prompt.trim()
                   ? "cursor-not-allowed bg-[rgba(224,176,122,0.4)] text-[#2a1e18]"
                   : "bg-[linear-gradient(135deg,var(--accent)_0%,var(--accent-strong)_100%)] text-[#1b130f] hover:scale-[1.01]",
               )}

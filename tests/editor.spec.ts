@@ -762,4 +762,14 @@ test.describe("Storyboard editor", () => {
 
     await expect(page.getByText("Delete Me Artifact")).toHaveCount(0);
   });
+  test("disables generate when prompt is empty", async ({ page }) => {
+    await page.goto("/editor");
+
+    const prompt = page.locator("textarea").first();
+    await prompt.fill("   ");
+
+    await expect(
+      page.getByRole("button", { name: /Generate storyboard/i }),
+    ).toBeDisabled();
+  });
 });

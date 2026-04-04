@@ -222,6 +222,7 @@ function createArtifactLabelState(
     snapshots: cloneSnapshots(state.snapshots),
   };
 }
+
 function createArtifactFromState(
   state: Pick<
     StoryboardState,
@@ -240,6 +241,50 @@ function createArtifactFromState(
     updatedAt,
     ...createArtifactLabelState(state),
   };
+}
+
+function persistWorkspaceState(
+  state: Pick<
+    StoryboardState,
+    | "prompt"
+    | "activeTemplate"
+    | "sections"
+    | "artifactTitle"
+    | "artifactSubtitle"
+    | "snapshots"
+    | "artifacts"
+    | "activeArtifactId"
+  >,
+) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(getPersistableState(state)),
+  );
+}
+
+function tryPersistWorkspaceState(
+  state: Pick<
+    StoryboardState,
+    | "prompt"
+    | "activeTemplate"
+    | "sections"
+    | "artifactTitle"
+    | "artifactSubtitle"
+    | "snapshots"
+    | "artifacts"
+    | "activeArtifactId"
+  >,
+) {
+  try {
+    persistWorkspaceState(state);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export const useStoryboardStore = create<StoryboardState>((set, get) => ({
@@ -267,7 +312,11 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
       lastSavedLabel: "Template switched locally",
     }),
   generateStoryboard: async () => {
-    const { prompt, activeTemplate } = get();
+    const { prompt, activeTemplate, isGenerating } = get();
+
+    if (isGenerating) {
+      return;
+    }
 
     if (!prompt.trim()) {
       set({
@@ -299,13 +348,14 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
 
       const generated = await response.json();
 
-      set({
+      set((state) => ({
         isGenerating: false,
         sections: generated.sections,
         artifactTitle: generated.artifactTitle,
         artifactSubtitle: generated.artifactSubtitle,
         lastSavedLabel: "Storyboard generated with AI",
-      });
+        activeArtifactId: state.activeArtifactId,
+      }));
     } catch (error) {
       console.error(error);
       set({
@@ -372,9 +422,23 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
         sections: cloneSections(state.sections),
       };
 
+      const nextSnapshots = [snapshot, ...state.snapshots].slice(0, 8);
+      const persisted = tryPersistWorkspaceState({
+        prompt: state.prompt,
+        activeTemplate: state.activeTemplate,
+        sections: state.sections,
+        artifactTitle: state.artifactTitle,
+        artifactSubtitle: state.artifactSubtitle,
+        snapshots: nextSnapshots,
+        artifacts: state.artifacts,
+        activeArtifactId: state.activeArtifactId,
+      });
+
       return {
-        snapshots: [snapshot, ...state.snapshots].slice(0, 8),
-        lastSavedLabel: "Snapshot saved locally",
+        snapshots: nextSnapshots,
+        lastSavedLabel: persisted
+          ? "Snapshot saved locally"
+          : "Snapshot saved in memory only",
       };
     }),
   restoreSnapshot: (snapshotId) =>
@@ -393,6 +457,30 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
         lastSavedLabel: `Restored ${snapshot.label}`,
       };
     }),
+  deleteSnapshot: (snapshotId) =>
+    set((state) => {
+      const nextSnapshots = state.snapshots.filter(
+        (snapshot) => snapshot.id !== snapshotId,
+      );
+
+      const persisted = tryPersistWorkspaceState({
+        prompt: state.prompt,
+        activeTemplate: state.activeTemplate,
+        sections: state.sections,
+        artifactTitle: state.artifactTitle,
+        artifactSubtitle: state.artifactSubtitle,
+        snapshots: nextSnapshots,
+        artifacts: state.artifacts,
+        activeArtifactId: state.activeArtifactId,
+      });
+
+      return {
+        snapshots: nextSnapshots,
+        lastSavedLabel: persisted
+          ? "Snapshot deleted locally"
+          : "Snapshot deleted in memory only",
+      };
+    }),
   saveArtifact: () =>
     set((state) => {
       const now = new Date().toISOString();
@@ -402,11 +490,25 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
       const remaining = state.artifacts.filter(
         (artifact) => artifact.id !== artifactId,
       );
+      const nextArtifacts = [nextArtifact, ...remaining].slice(0, 12);
+
+      const persisted = tryPersistWorkspaceState({
+        prompt: state.prompt,
+        activeTemplate: state.activeTemplate,
+        sections: state.sections,
+        artifactTitle: state.artifactTitle,
+        artifactSubtitle: state.artifactSubtitle,
+        snapshots: state.snapshots,
+        artifacts: nextArtifacts,
+        activeArtifactId: artifactId,
+      });
 
       return {
-        artifacts: [nextArtifact, ...remaining].slice(0, 12),
+        artifacts: nextArtifacts,
         activeArtifactId: artifactId,
-        lastSavedLabel: "Artifact saved to library",
+        lastSavedLabel: persisted
+          ? "Artifact saved to library"
+          : "Artifact saved in memory only",
       };
     }),
   saveArtifactAsNew: () =>
@@ -414,56 +516,58 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
       const now = new Date().toISOString();
       const artifactId = crypto.randomUUID();
       const nextArtifact = createArtifactFromState(state, artifactId, now);
+      const nextArtifacts = [nextArtifact, ...state.artifacts].slice(0, 12);
+
+      const persisted = tryPersistWorkspaceState({
+        prompt: state.prompt,
+        activeTemplate: state.activeTemplate,
+        sections: state.sections,
+        artifactTitle: state.artifactTitle,
+        artifactSubtitle: state.artifactSubtitle,
+        snapshots: state.snapshots,
+        artifacts: nextArtifacts,
+        activeArtifactId: artifactId,
+      });
 
       return {
-        artifacts: [nextArtifact, ...state.artifacts].slice(0, 12),
+        artifacts: nextArtifacts,
         activeArtifactId: artifactId,
-        lastSavedLabel: "Artifact saved as new entry",
+        lastSavedLabel: persisted
+          ? "Artifact saved as new entry"
+          : "Artifact saved as new in memory only",
       };
     }),
-
   deleteArtifact: (artifactId) =>
     set((state) => {
       const nextArtifacts = state.artifacts.filter(
         (artifact) => artifact.id !== artifactId,
       );
-
       const deletedActiveArtifact = state.activeArtifactId === artifactId;
+      const nextActiveArtifactId = deletedActiveArtifact
+        ? null
+        : state.activeArtifactId;
 
-      const nextState = {
+      const persisted = tryPersistWorkspaceState({
+        prompt: state.prompt,
+        activeTemplate: state.activeTemplate,
+        sections: state.sections,
+        artifactTitle: state.artifactTitle,
+        artifactSubtitle: state.artifactSubtitle,
+        snapshots: state.snapshots,
         artifacts: nextArtifacts,
-        activeArtifactId: deletedActiveArtifact ? null : state.activeArtifactId,
-        lastSavedLabel: deletedActiveArtifact
-          ? "Artifact deleted from library. Current editor is now an unsaved draft"
-          : "Artifact deleted from library",
+        activeArtifactId: nextActiveArtifactId,
+      });
+
+      return {
+        artifacts: nextArtifacts,
+        activeArtifactId: nextActiveArtifactId,
+        lastSavedLabel: persisted
+          ? deletedActiveArtifact
+            ? "Artifact deleted from library. Current editor is now an unsaved draft"
+            : "Artifact deleted from library"
+          : "Artifact deleted in memory only",
       };
-
-      if (typeof window !== "undefined") {
-        const currentState = get();
-
-        window.localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify(
-            getPersistableState({
-              prompt: currentState.prompt,
-              activeTemplate: currentState.activeTemplate,
-              sections: currentState.sections,
-              artifactTitle: currentState.artifactTitle,
-              artifactSubtitle: currentState.artifactSubtitle,
-              snapshots: currentState.snapshots,
-              artifacts: nextArtifacts,
-              activeArtifactId:
-                state.activeArtifactId === artifactId
-                  ? null
-                  : state.activeArtifactId,
-            }),
-          ),
-        );
-      }
-
-      return nextState;
     }),
-
   loadArtifact: (artifactId) =>
     set((state) => {
       const artifact = state.artifacts.find((item) => item.id === artifactId);
@@ -528,31 +632,25 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
 
     const state = get();
 
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(
-        getPersistableState({
-          prompt: state.prompt,
-          activeTemplate: state.activeTemplate,
-          sections: state.sections,
-          artifactTitle: state.artifactTitle,
-          artifactSubtitle: state.artifactSubtitle,
-          snapshots: state.snapshots,
-          artifacts: state.artifacts,
-          activeArtifactId: state.activeArtifactId,
-        }),
-      ),
-    );
+    try {
+      persistWorkspaceState({
+        prompt: state.prompt,
+        activeTemplate: state.activeTemplate,
+        sections: state.sections,
+        artifactTitle: state.artifactTitle,
+        artifactSubtitle: state.artifactSubtitle,
+        snapshots: state.snapshots,
+        artifacts: state.artifacts,
+        activeArtifactId: state.activeArtifactId,
+      });
 
-    set({
-      lastSavedLabel: "Saved to local storage",
-    });
+      set({
+        lastSavedLabel: "Saved to local storage",
+      });
+    } catch {
+      set({
+        lastSavedLabel: "Local save failed. Changes remain in memory",
+      });
+    }
   },
-  deleteSnapshot: (snapshotId) =>
-    set((state) => ({
-      snapshots: state.snapshots.filter(
-        (snapshot) => snapshot.id !== snapshotId,
-      ),
-      lastSavedLabel: "Snapshot deleted locally",
-    })),
 }));
