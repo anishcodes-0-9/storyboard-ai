@@ -1,4 +1,4 @@
-import { BookOpen, Clock3, MoveRight, Share2 } from "lucide-react";
+import { BookOpen, Clock3, MoveRight, Share2, Trash2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { AppShell } from "../components/layout/app-shell";
@@ -17,6 +17,7 @@ function formatArtifactTime(value: string) {
 export function LibraryPage() {
   const artifacts = useStoryboardStore((state) => state.artifacts);
   const loadArtifact = useStoryboardStore((state) => state.loadArtifact);
+  const deleteArtifact = useStoryboardStore((state) => state.deleteArtifact);
   const navigate = useNavigate();
 
   function handleOpenArtifact(artifactId: string) {
@@ -85,7 +86,6 @@ export function LibraryPage() {
                     {artifact.sections.length} sections ·{" "}
                     {artifact.snapshots.length} snapshots
                   </p>
-
                   <div className="mt-5 flex flex-wrap gap-3">
                     <button
                       type="button"
@@ -103,6 +103,15 @@ export function LibraryPage() {
                       <Share2 size={15} />
                       Read-only view
                     </Link>
+
+                    <button
+                      type="button"
+                      onClick={() => deleteArtifact(artifact.id)}
+                      className="inline-flex items-center gap-2 rounded-full border border-[rgba(240,139,125,0.24)] bg-[rgba(240,139,125,0.08)] px-4 py-2 text-sm text-[var(--danger)] transition hover:border-[var(--danger)]"
+                    >
+                      <Trash2 size={15} />
+                      Delete
+                    </button>
                   </div>
                 </article>
               ))}

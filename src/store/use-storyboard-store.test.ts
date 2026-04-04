@@ -156,6 +156,23 @@ describe("useStoryboardStore snapshots and artifacts", () => {
     expect(restored.activeArtifactId).toBe(firstArtifactId);
   });
 
+  it("deletes an artifact and clears activeArtifactId if it was active", () => {
+    useStoryboardStore.getState().saveArtifact();
+
+    const artifactId = useStoryboardStore.getState().artifacts[0].id;
+
+    useStoryboardStore.setState({
+      activeArtifactId: artifactId,
+    });
+
+    useStoryboardStore.getState().deleteArtifact(artifactId);
+
+    const state = useStoryboardStore.getState();
+    expect(state.artifacts).toHaveLength(0);
+    expect(state.activeArtifactId).toBeNull();
+    expect(state.lastSavedLabel).toContain("Artifact deleted from library");
+  });
+
   it("saves artifact as a new entry", () => {
     useStoryboardStore.getState().saveArtifact();
 

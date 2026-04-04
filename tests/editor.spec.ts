@@ -693,4 +693,73 @@ test.describe("Storyboard editor", () => {
 
     await expect(page.getByRole("button", { name: /Delete/i })).toHaveCount(1);
   });
+  test("deletes an artifact from the library and keeps it deleted after refresh", async ({
+    page,
+  }) => {
+    await page.route("**/api/generate-storyboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          artifactTitle: "Delete Me Artifact",
+          artifactSubtitle: "Launch Brief generated from your latest prompt",
+          sections: [
+            {
+              id: "summary",
+              title: "Narrative Summary",
+              kind: "summary",
+              tone: "Confident",
+              status: "ai",
+              content: ["Delete summary 1", "Delete summary 2"],
+            },
+            {
+              id: "pillars",
+              title: "Strategic Pillars",
+              kind: "bullets",
+              tone: "Sharp",
+              status: "ai",
+              content: ["Delete pillar 1", "Delete pillar 2"],
+            },
+            {
+              id: "roadmap",
+              title: "Milestone Roadmap",
+              kind: "timeline",
+              tone: "Operational",
+              status: "ai",
+              content: ["Delete roadmap 1", "Delete roadmap 2"],
+            },
+            {
+              id: "success",
+              title: "Success Signals",
+              kind: "metrics",
+              tone: "Measured",
+              status: "ai",
+              content: ["Delete success 1", "Delete success 2"],
+            },
+          ],
+        }),
+      });
+    });
+
+    await page.goto("/editor");
+
+    const prompt = page.locator("textarea").first();
+    await prompt.fill("Delete artifact prompt");
+    await page.getByRole("button", { name: /Generate storyboard/i }).click();
+    await page.getByRole("button", { name: /Save to library/i }).click();
+    await page.waitForTimeout(800);
+
+    await page.goto("/library");
+
+    await expect(page.getByText("Delete Me Artifact")).toBeVisible();
+
+    await page.getByRole("button", { name: /Delete/i }).click();
+
+    await expect(page.getByText("Delete Me Artifact")).toHaveCount(0);
+
+    await page.waitForTimeout(800);
+    await page.reload();
+
+    await expect(page.getByText("Delete Me Artifact")).toHaveCount(0);
+  });
 });

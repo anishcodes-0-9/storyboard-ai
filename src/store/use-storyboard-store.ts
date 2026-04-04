@@ -54,6 +54,7 @@ type StoryboardState = {
   deleteSnapshot: (snapshotId: string) => void;
   saveArtifact: () => void;
   saveArtifactAsNew: () => void;
+  deleteArtifact: (artifactId: string) => void;
   loadArtifact: (artifactId: string) => void;
   hydrateFromStorage: () => void;
   saveToStorage: () => void;
@@ -419,6 +420,48 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
         activeArtifactId: artifactId,
         lastSavedLabel: "Artifact saved as new entry",
       };
+    }),
+
+  deleteArtifact: (artifactId) =>
+    set((state) => {
+      const nextArtifacts = state.artifacts.filter(
+        (artifact) => artifact.id !== artifactId,
+      );
+
+      const deletedActiveArtifact = state.activeArtifactId === artifactId;
+
+      const nextState = {
+        artifacts: nextArtifacts,
+        activeArtifactId: deletedActiveArtifact ? null : state.activeArtifactId,
+        lastSavedLabel: deletedActiveArtifact
+          ? "Artifact deleted from library. Current editor is now an unsaved draft"
+          : "Artifact deleted from library",
+      };
+
+      if (typeof window !== "undefined") {
+        const currentState = get();
+
+        window.localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(
+            getPersistableState({
+              prompt: currentState.prompt,
+              activeTemplate: currentState.activeTemplate,
+              sections: currentState.sections,
+              artifactTitle: currentState.artifactTitle,
+              artifactSubtitle: currentState.artifactSubtitle,
+              snapshots: currentState.snapshots,
+              artifacts: nextArtifacts,
+              activeArtifactId:
+                state.activeArtifactId === artifactId
+                  ? null
+                  : state.activeArtifactId,
+            }),
+          ),
+        );
+      }
+
+      return nextState;
     }),
 
   loadArtifact: (artifactId) =>
