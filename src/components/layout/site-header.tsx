@@ -8,9 +8,13 @@ export function SiteHeader() {
     <header className="sticky top-0 z-30 border-b border-[var(--panel-border)] bg-[rgba(10,8,8,0.72)] backdrop-blur-xl">
       <div className="mx-auto flex max-w-[1600px] items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[rgba(224,176,122,0.18)] bg-[rgba(224,176,122,0.08)] text-[var(--accent)]">
+          <Link
+            to="/"
+            aria-label="Go to home page"
+            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[rgba(224,176,122,0.18)] bg-[rgba(224,176,122,0.08)] text-[var(--accent)] transition hover:border-[var(--accent)]"
+          >
             <LayoutTemplate size={18} />
-          </div>
+          </Link>
 
           <div>
             <Link
