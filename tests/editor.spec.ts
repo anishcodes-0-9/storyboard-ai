@@ -97,11 +97,59 @@ test.describe("Storyboard editor", () => {
       /Product Strategy/i,
     );
   });
-
   test("generates storyboard content from the prompt", async ({ page }) => {
+    await page.route("**/api/generate-storyboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          artifactTitle: "Football Coaching Assistant Storyboard",
+          artifactSubtitle: "Launch Brief generated from your latest prompt",
+          sections: [
+            {
+              id: "summary",
+              title: "Narrative Summary",
+              kind: "summary",
+              tone: "Confident",
+              status: "ai",
+              content: ["Generated summary line 1", "Generated summary line 2"],
+            },
+            {
+              id: "pillars",
+              title: "Strategic Pillars",
+              kind: "bullets",
+              tone: "Sharp",
+              status: "ai",
+              content: ["Generated pillar 1", "Generated pillar 2"],
+            },
+            {
+              id: "roadmap",
+              title: "Milestone Roadmap",
+              kind: "timeline",
+              tone: "Operational",
+              status: "ai",
+              content: ["Generated roadmap 1", "Generated roadmap 2"],
+            },
+            {
+              id: "success",
+              title: "Success Signals",
+              kind: "metrics",
+              tone: "Measured",
+              status: "ai",
+              content: ["Generated success 1", "Generated success 2"],
+            },
+          ],
+        }),
+      });
+    });
+
     await page.goto("/editor");
 
     const prompt = page.locator("textarea").first();
+    const previousTitle = await page
+      .getByRole("heading", { level: 1 })
+      .textContent();
+
     await prompt.fill(
       "Create a cinematic storyboard for a football coaching assistant app for college teams.",
     );
@@ -109,22 +157,74 @@ test.describe("Storyboard editor", () => {
     await page.getByRole("button", { name: /Generate storyboard/i }).click();
 
     await expect(
-      page.getByRole("button", { name: /Generating/i }),
-    ).toBeDisabled();
-
-    await expect(
-      page.getByText(/football coaching assistant app for college teams/i),
+      page
+        .locator("p")
+        .filter({ hasText: "Storyboard generated with AI" })
+        .first(),
     ).toBeVisible();
 
-    await page.waitForTimeout(800);
-    await page.reload();
-
     await expect(
-      page.getByText(/football coaching assistant app for college teams/i),
+      page.getByRole("heading", {
+        level: 1,
+        name: /Football Coaching Assistant Storyboard/i,
+      }),
     ).toBeVisible();
+
+    const nextTitle = await page
+      .getByRole("heading", { level: 1 })
+      .textContent();
+    expect(nextTitle).not.toBe(previousTitle);
   });
 
-  test("generation reflects template context", async ({ page }) => {
+  test("generation reflects selected template in subtitle", async ({
+    page,
+  }) => {
+    await page.route("**/api/generate-storyboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          artifactTitle: "AI Launch Storyboard",
+          artifactSubtitle:
+            "Executive Summary generated from your latest prompt",
+          sections: [
+            {
+              id: "summary",
+              title: "Narrative Summary",
+              kind: "summary",
+              tone: "Confident",
+              status: "ai",
+              content: ["Summary line 1", "Summary line 2"],
+            },
+            {
+              id: "pillars",
+              title: "Strategic Pillars",
+              kind: "bullets",
+              tone: "Sharp",
+              status: "ai",
+              content: ["Pillar 1", "Pillar 2"],
+            },
+            {
+              id: "roadmap",
+              title: "Milestone Roadmap",
+              kind: "timeline",
+              tone: "Operational",
+              status: "ai",
+              content: ["Roadmap 1", "Roadmap 2"],
+            },
+            {
+              id: "success",
+              title: "Success Signals",
+              kind: "metrics",
+              tone: "Measured",
+              status: "ai",
+              content: ["Success 1", "Success 2"],
+            },
+          ],
+        }),
+      });
+    });
+
     await page.goto("/editor");
 
     const prompt = page.locator("textarea").first();
@@ -139,46 +239,85 @@ test.describe("Storyboard editor", () => {
 
     await page.getByRole("button", { name: /Generate storyboard/i }).click();
 
-    await expect(page.getByText(/polished executive summary/i)).toBeVisible();
+    await expect(
+      page.getByText(/Executive Summary generated from your latest prompt/i),
+    ).toBeVisible();
   });
 
-  test("generated artifact title updates and persists after refresh", async ({
-    page,
-  }) => {
+  test("generated artifact persists after refresh", async ({ page }) => {
+    await page.route("**/api/generate-storyboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          artifactTitle: "Recruiting Platform Storyboard",
+          artifactSubtitle: "Launch Brief generated from your latest prompt",
+          sections: [
+            {
+              id: "summary",
+              title: "Narrative Summary",
+              kind: "summary",
+              tone: "Confident",
+              status: "ai",
+              content: ["Persisted summary 1", "Persisted summary 2"],
+            },
+            {
+              id: "pillars",
+              title: "Strategic Pillars",
+              kind: "bullets",
+              tone: "Sharp",
+              status: "ai",
+              content: ["Persisted pillar 1", "Persisted pillar 2"],
+            },
+            {
+              id: "roadmap",
+              title: "Milestone Roadmap",
+              kind: "timeline",
+              tone: "Operational",
+              status: "ai",
+              content: ["Persisted roadmap 1", "Persisted roadmap 2"],
+            },
+            {
+              id: "success",
+              title: "Success Signals",
+              kind: "metrics",
+              tone: "Measured",
+              status: "ai",
+              content: ["Persisted success 1", "Persisted success 2"],
+            },
+          ],
+        }),
+      });
+    });
+
     await page.goto("/editor");
 
     const prompt = page.locator("textarea").first();
     await prompt.fill(
-      "create a storyboard for a football recruiting platform for college coaches",
+      "Create a storyboard for a football recruiting platform for college coaches",
     );
 
     await page.getByRole("button", { name: /Generate storyboard/i }).click();
 
     await expect(
-      page.getByRole("heading", {
-        level: 1,
-        name: /create a storyboard for a football recruiting/i,
-      }),
+      page
+        .locator("p")
+        .filter({ hasText: "Storyboard generated with AI" })
+        .first(),
     ).toBeVisible();
 
-    await expect(
-      page.getByText(/Launch Brief generated from your latest prompt/i),
-    ).toBeVisible();
+    const generatedTitle = await page
+      .getByRole("heading", { level: 1 })
+      .textContent();
 
     await page.waitForTimeout(800);
     await page.reload();
 
-    await expect(
-      page.getByRole("heading", {
-        level: 1,
-        name: /create a storyboard for a football recruiting/i,
-      }),
-    ).toBeVisible();
-
-    await expect(
-      page.getByText(/Launch Brief generated from your latest prompt/i),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      generatedTitle ?? "",
+    );
   });
+
   test("saves and restores snapshots across refresh", async ({ page }) => {
     await page.goto("/editor");
 

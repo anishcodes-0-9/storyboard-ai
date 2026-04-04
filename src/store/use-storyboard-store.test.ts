@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, afterEach } from "vitest";
 
 import { useStoryboardStore } from "./use-storyboard-store";
 
@@ -28,6 +28,10 @@ describe("useStoryboardStore snapshots and artifacts", () => {
       hydrated: true,
       isGenerating: false,
     });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("saves and restores snapshots", () => {
@@ -116,5 +120,81 @@ describe("useStoryboardStore snapshots and artifacts", () => {
     expect(restored.activeTemplate).toBe("launch-brief");
     expect(restored.sections[0].content).toEqual(["Initial summary"]);
     expect(restored.activeArtifactId).toBe(firstArtifactId);
+  });
+
+  it("generates storyboard from the API response", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        artifactTitle: "API Generated Artifact",
+        artifactSubtitle: "Launch Brief generated from your latest prompt",
+        sections: [
+          {
+            id: "summary",
+            title: "Narrative Summary",
+            kind: "summary",
+            tone: "Confident",
+            status: "ai",
+            content: ["API summary 1", "API summary 2"],
+          },
+          {
+            id: "pillars",
+            title: "Strategic Pillars",
+            kind: "bullets",
+            tone: "Sharp",
+            status: "ai",
+            content: ["API pillar 1", "API pillar 2"],
+          },
+          {
+            id: "roadmap",
+            title: "Milestone Roadmap",
+            kind: "timeline",
+            tone: "Operational",
+            status: "ai",
+            content: ["API roadmap 1", "API roadmap 2"],
+          },
+          {
+            id: "success",
+            title: "Success Signals",
+            kind: "metrics",
+            tone: "Measured",
+            status: "ai",
+            content: ["API success 1", "API success 2"],
+          },
+        ],
+      }),
+    } as Response);
+
+    await useStoryboardStore.getState().generateStoryboard();
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/generate-storyboard", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prompt: "Initial prompt",
+        template: "launch-brief",
+      }),
+    });
+
+    const state = useStoryboardStore.getState();
+    expect(state.artifactTitle).toBe("API Generated Artifact");
+    expect(state.sections).toHaveLength(4);
+    expect(state.lastSavedLabel).toBe("Storyboard generated with AI");
+    expect(state.isGenerating).toBe(false);
+  });
+
+  it("handles generation failure gracefully", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: false,
+    } as Response);
+
+    await useStoryboardStore.getState().generateStoryboard();
+
+    expect(useStoryboardStore.getState().lastSavedLabel).toBe(
+      "Generation failed. Check API/server setup.",
+    );
+    expect(useStoryboardStore.getState().isGenerating).toBe(false);
   });
 });

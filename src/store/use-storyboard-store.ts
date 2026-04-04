@@ -181,94 +181,6 @@ function moveItem<T>(items: T[], fromIndex: number, toIndex: number) {
   return next;
 }
 
-function extractPromptKeywords(prompt: string) {
-  return prompt
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ")
-    .split(/\s+/)
-    .filter((word) => word.length > 3)
-    .slice(0, 6);
-}
-
-function deriveArtifactTitle(prompt: string) {
-  const cleaned = prompt.trim().replace(/\s+/g, " ");
-  if (!cleaned) return "Untitled Storyboard";
-  const trimmed =
-    cleaned.length > 48 ? `${cleaned.slice(0, 48).trim()}...` : cleaned;
-  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
-}
-
-function buildGeneratedSections(
-  prompt: string,
-  template: StoryboardState["activeTemplate"],
-): {
-  sections: StoryboardSection[];
-  artifactTitle: string;
-  artifactSubtitle: string;
-} {
-  const normalizedPrompt = prompt.trim();
-  const keywords = extractPromptKeywords(normalizedPrompt);
-  const subject =
-    normalizedPrompt.length > 0
-      ? normalizedPrompt.slice(0, 72)
-      : "an AI-assisted product story";
-  const templateLabel = templateLabels[template];
-
-  return {
-    artifactTitle: deriveArtifactTitle(normalizedPrompt),
-    artifactSubtitle: `${templateLabel} generated from your latest prompt`,
-    sections: [
-      {
-        id: "summary",
-        title: "Narrative Summary",
-        kind: "summary",
-        status: "ai",
-        tone: "Confident",
-        content: [
-          `This storyboard frames ${subject} as a polished ${templateLabel.toLowerCase()} with a clearer story arc, stronger structure, and sharper review readiness.`,
-          `The generated draft emphasizes speed, visual clarity, and editable sections so the artifact feels useful immediately instead of reading like raw AI output.`,
-        ],
-      },
-      {
-        id: "pillars",
-        title: "Strategic Pillars",
-        kind: "bullets",
-        status: "ai",
-        tone: "Sharp",
-        content: [
-          `Lead with ${keywords[0] ?? "a compelling product narrative"} to anchor the story`,
-          `Show why ${keywords[1] ?? "the core workflow"} matters now`,
-          `Translate ${keywords[2] ?? "the value proposition"} into a presentation-ready structure`,
-        ],
-      },
-      {
-        id: "roadmap",
-        title: "Milestone Roadmap",
-        kind: "timeline",
-        status: "ai",
-        tone: "Operational",
-        content: [
-          `Phase 1: shape the ${keywords[3] ?? "opening narrative"} and establish the visual hierarchy`,
-          `Phase 2: refine sections, iterate on ${keywords[4] ?? "key messages"}, and validate clarity`,
-          `Phase 3: prepare export-ready output and finalize the ${keywords[5] ?? "review flow"}`,
-        ],
-      },
-      {
-        id: "success",
-        title: "Success Signals",
-        kind: "metrics",
-        status: "ai",
-        tone: "Measured",
-        content: [
-          "The first draft feels credible within one generation pass",
-          "Users can refine individual sections without losing the broader story",
-          "The final artifact looks polished enough to review or present right away",
-        ],
-      },
-    ],
-  };
-}
-
 function cloneSections(sections: StoryboardSection[]) {
   return sections.map((section) => ({
     ...section,
@@ -335,24 +247,50 @@ export const useStoryboardStore = create<StoryboardState>((set, get) => ({
   generateStoryboard: async () => {
     const { prompt, activeTemplate } = get();
 
+    if (!prompt.trim()) {
+      set({
+        lastSavedLabel: "Prompt is required before generation",
+      });
+      return;
+    }
+
     set({
       isGenerating: true,
       lastSavedLabel: "Generating storyboard...",
     });
 
-    await new Promise((resolve) => {
-      window.setTimeout(resolve, 900);
-    });
+    try {
+      const response = await fetch("/api/generate-storyboard", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt,
+          template: activeTemplate,
+        }),
+      });
 
-    const generated = buildGeneratedSections(prompt, activeTemplate);
+      if (!response.ok) {
+        throw new Error("Generation request failed");
+      }
 
-    set({
-      isGenerating: false,
-      sections: generated.sections,
-      artifactTitle: generated.artifactTitle,
-      artifactSubtitle: generated.artifactSubtitle,
-      lastSavedLabel: "Storyboard generated locally",
-    });
+      const generated = await response.json();
+
+      set({
+        isGenerating: false,
+        sections: generated.sections,
+        artifactTitle: generated.artifactTitle,
+        artifactSubtitle: generated.artifactSubtitle,
+        lastSavedLabel: "Storyboard generated with AI",
+      });
+    } catch (error) {
+      console.error(error);
+      set({
+        isGenerating: false,
+        lastSavedLabel: "Generation failed. Check API/server setup.",
+      });
+    }
   },
   updateSection: (id, content) =>
     set((state) => ({
