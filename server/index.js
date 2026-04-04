@@ -22,6 +22,8 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.post("/api/generate-storyboard", async (req, res) => {
+  const requestStartedAt = Date.now();
+
   try {
     if (!process.env.OPENAI_API_KEY) {
       return res.status(500).json({
@@ -44,15 +46,23 @@ app.post("/api/generate-storyboard", async (req, res) => {
     const templateLabel =
       templateLabelMap[template] ?? templateLabelMap["launch-brief"];
 
+    console.log("[generate-storyboard] request received", {
+      template: templateLabel,
+      promptLength: prompt.length,
+      startedAt: new Date(requestStartedAt).toISOString(),
+    });
+
+    const openAiStartedAt = Date.now();
+
     const response = await client.responses.create({
-      model: "gpt-5",
+      model: "gpt-5-mini",
       input: [
         {
           role: "system",
           content: [
             {
               type: "input_text",
-              text: "You generate polished storyboard artifacts for a frontend product. Return only valid JSON matching the requested schema. Keep the output concise, presentation-ready, and structured for editing.",
+              text: "Return only valid JSON matching the schema. Write concise, presentation-ready storyboard content.",
             },
           ],
         },
@@ -63,32 +73,14 @@ app.post("/api/generate-storyboard", async (req, res) => {
               type: "input_text",
               text: `
 Template: ${templateLabel}
+Prompt: ${prompt}
 
-Prompt:
-${prompt}
-
-Return JSON with this shape:
-{
-  "artifactTitle": "string",
-  "artifactSubtitle": "string",
-  "sections": [
-    {
-      "id": "summary | pillars | roadmap | success",
-      "title": "string",
-      "kind": "summary | bullets | timeline | metrics",
-      "tone": "string",
-      "status": "ai",
-      "content": ["string", "string"]
-    }
-  ]
-}
-
-Requirements:
-- Exactly 4 sections with ids: summary, pillars, roadmap, success
-- Keep each section to 2-3 content lines
-- artifactSubtitle should mention the selected template
-- Make the title feel presentation-ready, not generic
-- Do not include markdown fences
+Return:
+- artifactTitle: presentation-ready title
+- artifactSubtitle: mention selected template
+- sections: exactly 4 items with ids summary, pillars, roadmap, success
+- each section: 2-3 short content lines
+- no markdown fences
               `.trim(),
             },
           ],
@@ -128,7 +120,7 @@ Requirements:
                     },
                     content: {
                       type: "array",
-                      minItems: 2,
+                      minItems: 1,
                       maxItems: 3,
                       items: { type: "string" },
                     },
@@ -150,11 +142,26 @@ Requirements:
       },
     });
 
+    const openAiDurationMs = Date.now() - openAiStartedAt;
+    console.log("[generate-storyboard] OpenAI response received", {
+      durationMs: openAiDurationMs,
+    });
+
+    const parseStartedAt = Date.now();
     const payload = JSON.parse(response.output_text);
+    const parseDurationMs = Date.now() - parseStartedAt;
+
+    console.log("[generate-storyboard] payload parsed", {
+      parseDurationMs,
+      totalDurationMs: Date.now() - requestStartedAt,
+    });
 
     res.json(payload);
   } catch (error) {
     console.error("Storyboard generation failed:", error);
+    console.log("[generate-storyboard] request failed", {
+      totalDurationMs: Date.now() - requestStartedAt,
+    });
 
     res.status(500).json({
       error: "Generation failed. Please try again.",
