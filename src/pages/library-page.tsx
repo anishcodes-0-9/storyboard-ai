@@ -1,4 +1,4 @@
-import { BookOpen, Clock3, MoveRight } from "lucide-react";
+import { BookOpen, Clock3, MoveRight, Share2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { AppShell } from "../components/layout/app-shell";
@@ -86,14 +86,24 @@ export function LibraryPage() {
                     {artifact.snapshots.length} snapshots
                   </p>
 
-                  <button
-                    type="button"
-                    onClick={() => handleOpenArtifact(artifact.id)}
-                    className="mt-5 inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[rgba(224,176,122,0.08)] px-4 py-2 text-sm text-[var(--text)] transition hover:border-[var(--accent)]"
-                  >
-                    Open artifact
-                    <MoveRight size={15} />
-                  </button>
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenArtifact(artifact.id)}
+                      className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[rgba(224,176,122,0.08)] px-4 py-2 text-sm text-[var(--text)] transition hover:border-[var(--accent)]"
+                    >
+                      Open artifact
+                      <MoveRight size={15} />
+                    </button>
+
+                    <Link
+                      to={`/share/${artifact.id}`}
+                      className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-2 text-sm text-[var(--text)] transition hover:border-[var(--accent)]"
+                    >
+                      <Share2 size={15} />
+                      Read-only view
+                    </Link>
+                  </div>
                 </article>
               ))}
             </div>

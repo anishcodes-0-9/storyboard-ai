@@ -3,6 +3,7 @@ import { createBrowserRouter } from "react-router-dom";
 import { EditorPage } from "../pages/editor-page";
 import { HomePage } from "../pages/home-page";
 import { LibraryPage } from "../pages/library-page";
+import { SharePage } from "../pages/share-page";
 
 export const router = createBrowserRouter([
   {
@@ -16,5 +17,9 @@ export const router = createBrowserRouter([
   {
     path: "/library",
     element: <LibraryPage />,
+  },
+  {
+    path: "/share/:artifactId",
+    element: <SharePage />,
   },
 ]);

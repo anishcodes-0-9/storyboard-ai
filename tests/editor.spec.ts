@@ -244,4 +244,32 @@ test.describe("Storyboard editor", () => {
       page.getByRole("button", { name: /Open artifact/i }),
     ).toHaveCount(1);
   });
+  test("opens a saved artifact in read-only share view", async ({ page }) => {
+    await page.goto("/editor");
+
+    const prompt = page.locator("textarea").first();
+    await prompt.fill("Shared artifact prompt");
+    await page.getByRole("button", { name: /Generate storyboard/i }).click();
+
+    await page.getByRole("button", { name: /Save to library/i }).click();
+    await page.waitForTimeout(800);
+
+    await page.goto("/library");
+    await page.getByRole("link", { name: /Read-only view/i }).click();
+
+    await expect(page.getByText(/shared artifact/i)).toBeVisible();
+    await expect(
+      page.getByText(/generated from your latest prompt/i),
+    ).toBeVisible();
+    await expect(page.getByText("Narrative Summary")).toBeVisible();
+    await expect(page.getByText("Strategic Pillars")).toBeVisible();
+
+    await expect(page.locator("textarea")).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: /Edit Narrative Summary/i }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: /Regenerate Narrative Summary/i }),
+    ).toHaveCount(0);
+  });
 });
