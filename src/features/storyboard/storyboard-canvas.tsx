@@ -91,18 +91,18 @@ export function StoryboardCanvas() {
   }
 
   return (
-    <section className="rounded-[32px] border border-[var(--panel-border)] bg-[rgba(16,12,11,0.82)] p-5 shadow-[var(--shadow-lg)] backdrop-blur-xl">
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--panel-border)] pb-5">
-        <div>
+    <section className="rounded-[28px] border border-[var(--panel-border)] bg-[rgba(16,12,11,0.82)] p-4 shadow-[var(--shadow-lg)] backdrop-blur-xl sm:rounded-[32px] sm:p-5">
+      <div className="flex flex-col gap-4 border-b border-[var(--panel-border)] pb-5 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
           <p className="text-[11px] uppercase tracking-[0.32em] text-[var(--accent)]">
             Live Artifact
           </p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[var(--text)]">
+          <h1 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-[var(--text)] sm:text-3xl">
             {artifactTitle}
           </h1>
-          <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-[rgba(224,176,122,0.18)] bg-[rgba(224,176,122,0.08)] px-3 py-2 text-xs uppercase tracking-[0.18em] text-[var(--accent)]">
-            <Sparkles size={14} />
-            {artifactSubtitle}
+          <div className="mt-3 inline-flex max-w-full items-center gap-2 rounded-full border border-[rgba(224,176,122,0.18)] bg-[rgba(224,176,122,0.08)] px-3 py-2 text-[10px] uppercase tracking-[0.14em] text-[var(--accent)] sm:text-xs sm:tracking-[0.18em]">
+            <Sparkles size={14} className="shrink-0" />
+            <span className="truncate">{artifactSubtitle}</span>
           </div>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
             This is the core product surface: prompt in, structured narrative
@@ -117,7 +117,7 @@ export function StoryboardCanvas() {
         <div className="flex flex-wrap gap-3">
           <div
             aria-label="Active template"
-            className="rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-2 text-xs uppercase tracking-[0.22em] text-[var(--text-muted)]"
+            className="rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-4 py-2 text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)] sm:text-xs sm:tracking-[0.22em]"
           >
             {templateLabels[activeTemplate]}
           </div>
@@ -154,7 +154,7 @@ export function StoryboardCanvas() {
       </div>
 
       <div ref={exportRef} className="mt-5">
-        <div className="flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-[var(--text-faint)]">
+        <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-[var(--text-faint)] sm:text-xs sm:tracking-[0.24em]">
           <Grip size={14} />
           Drag sections to reorder the artifact
         </div>

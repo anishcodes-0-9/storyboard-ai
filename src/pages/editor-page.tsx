@@ -6,7 +6,7 @@ import { StoryboardCanvas } from "../features/storyboard/storyboard-canvas";
 export function EditorPage() {
   return (
     <AppShell>
-      <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)_320px]">
+      <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)_300px]">
         <PromptPanel />
         <StoryboardCanvas />
         <HistoryPanel />

@@ -28,13 +28,13 @@ export function LibraryPage() {
   return (
     <AppShell>
       <div className="mx-auto max-w-6xl">
-        <div className="rounded-[32px] border border-[var(--panel-border)] bg-[rgba(16,12,11,0.82)] p-6 shadow-[var(--shadow-lg)] backdrop-blur-xl">
-          <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--panel-border)] pb-5">
-            <div>
+        <div className="rounded-[28px] border border-[var(--panel-border)] bg-[rgba(16,12,11,0.82)] p-4 shadow-[var(--shadow-lg)] backdrop-blur-xl sm:rounded-[32px] sm:p-6">
+          <div className="flex flex-col gap-4 border-b border-[var(--panel-border)] pb-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
               <p className="text-[11px] uppercase tracking-[0.32em] text-[var(--accent)]">
                 Artifact Library
               </p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-[-0.04em] text-[var(--text)]">
+              <h1 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[var(--text)] sm:text-4xl">
                 Return to previous storyboard drafts
               </h1>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
@@ -45,7 +45,7 @@ export function LibraryPage() {
 
             <Link
               to="/editor"
-              className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-5 py-3 text-sm text-[var(--text)] transition hover:border-[var(--accent)]"
+              className="inline-flex items-center gap-2 self-start rounded-full border border-[var(--panel-border)] bg-[var(--panel)] px-5 py-3 text-sm text-[var(--text)] transition hover:border-[var(--accent)]"
             >
               Back to editor
             </Link>
@@ -76,7 +76,7 @@ export function LibraryPage() {
                     Updated {formatArtifactTime(artifact.updatedAt)}
                   </div>
 
-                  <h2 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-[var(--text)]">
+                  <h2 className="mt-3 text-xl font-semibold tracking-[-0.03em] text-[var(--text)] sm:text-2xl">
                     {artifact.title}
                   </h2>
                   <p className="mt-3 text-sm leading-7 text-[var(--text-muted)]">
